@@ -1,27 +1,29 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import torch
-import numpy as np
 
-# Read data from .csv
+# The Data Frames are named according to its csv-filename in the format of pandas-DataFrame
 data = pd.read_csv('./data/data.csv')
-# print(data.columns)
-# print(data.head(5))
+# data_by_artist = pd.read_csv('./data/data_by_artist.csv')
+# data_by_genres = pd.read_csv('./data/data_by_genres.csv')
+# data_by_year = pd.read_csv('./data/data_by_year.csv')
+# data_w_year = pd.read_csv('./data/data_w_genres.csv')
 
-# Drop irrelevant data
-data.drop(['duration_ms', 'release_date', 'id'], axis=1, inplace=True)
 
-# Normalize columns
-data['popularity'] = data['popularity']/100
-data['tempo'] = (data['tempo'] - 50)/100
-data['loudness'] = (data['loudness'] + 60)/60
+# Remove unnecessary attributes ['explicit', 'id', 'year', 'release_date']
+columns_to_drop = ['explicit', 'id', 'release_date']
+data.drop(columns_to_drop, axis=1, inplace=True)
 
-# Visualization
-# print(data)
-# plt.scatter(x=data['danceability'],
-#             y=data['popularity'])
-# plt.show()
 
-# Convert to tensor
-t = data.to_numpy()
-print(t.shape)
+def min_max_normalize(df, columns):
+    for col in columns:
+        max_value = data[col].max()
+        min_value = data[col].min()
+        data[col] = (data[col] - min_value) / (max_value - min_value)
+    return df
+
+
+columns_to_normalize = ['key', 'loudness', 'popularity', 'tempo', 'speechiness', 'year']
+min_max_normalize(data, columns_to_normalize)
+
+data['year'].plot.hist(bins=10)
+plt.show()
