@@ -7,12 +7,12 @@ def init_weights(m):
         torch.nn.init.normal_(m.weight, std=0.01)        
         m.bias.data.fill_(0.01)
 
-class AutoEncoder(nn.Module):
+class Autoencoder(nn.Module):
 
-    LAYER_SIZES = [14, 9, 6, 3]
+    LAYER_SIZES = [14, 10, 6, 3]
     
     def __init__(self):
-        super(AutoEncoder, self).__init__()
+        super(Autoencoder, self).__init__()
         self.buildArchitecture()
         self.apply(init_weights)
 
@@ -55,7 +55,7 @@ class AutoEncoder(nn.Module):
     def decode(self, x):
         x = F.relu(self.dec1(x))
         x = F.relu(self.dec2(x))
-        x = F.relu(self.dec3(x))
+        x = F.sigmoid(self.dec3(x))
 
         return x
 
