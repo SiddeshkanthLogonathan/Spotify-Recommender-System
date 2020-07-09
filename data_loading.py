@@ -1,8 +1,7 @@
-from pandas import read_csv, DataFrame, set_option
+from pandas import read_csv, DataFrame
 from torch.utils.data import Dataset, DataLoader
 from torch import tensor, set_printoptions
 from ast import literal_eval
-import typing
 
 
 class SpotifyRecommenderDataset(Dataset):
@@ -15,27 +14,33 @@ class SpotifyRecommenderDataset(Dataset):
         self._convert_column_to_string_type(self.df, 'artists')
         self._convert_column_to_string_type(self.df_w_genres, 'genres')
         
-        self._join_genres_into_songs()
+        # self._join_genres_into_songs()
 
-        #self._drop_non_numeric_columns()
-        #self._normalize_columns()
-        #self.tensor = tensor(self.df.values)
+        # self._drop_non_numeric_columns()
+        # self._normalize_columns()
+        # self.tensor = tensor(self.df.values)
 
     def _join_genres_into_songs(self):
-        self.df['genres'] = [list()] * len(self.df)
-        for i in range(len(self.df)):
-            for artists in self.df.loc[i, 'artists']:
-                    genres = []
-                    
-                    genres_for_artists = self.df_w_genres.loc[self.df_w_genres['artists'] == artists, 'genres']
-                
-                    for genre_list in genres_for_artists:
-                        genres.extend(genres)
-                        unique_sorted_genres = sorted(list(set(self.df.loc[i, 'genres'])))
-                        self.df.loc[i, 'genres'] = list(range(100))
+        # self.df['genres'] = [list()] * len(self.df)
+        rows_for_genres = []
 
-            if i == 100:
-                break
+        for i in range(len(self.df)):
+            genres_by_artist = []
+            genres = []
+            for artists in self.df.loc[i, 'artists']:
+
+                genres_for_artist = (self.df_w_genres.loc[self.df_w_genres['artists'] == artists, 'genres']).tolist()
+                genres_by_artist.extend(genres_for_artist)
+
+            for genre_list in genres_by_artist:
+                genres.extend(genre_list)
+            unique_sorted_genres = sorted(list(set(genres)))
+            # self.df.loc[i, 'genres'] = unique_sorted_genres
+            rows_for_genres.append(unique_sorted_genres)
+
+        self.df['genres'] = rows_for_genres
+        # This was only executed once to store the dataset so that it could be read from now onwards.
+        # self.df.to_csv('data_and_genres.csv')
 
     def _convert_column_to_string_type(self, dataframe: DataFrame, column: str):
         string_column = dataframe[column]
@@ -60,11 +65,12 @@ class SpotifyRecommenderDataset(Dataset):
 
 def main():
     dataset = SpotifyRecommenderDataset()
-    #set_option('display.max_colwidth', -1)
-    set_option('display.max_colwidth', None)
-    set_option('display.max_columns', 10)
-    print(dataset.df[['artists', 'genres']].head(100))
-    
+    # set_option('display.max_colwidth', -1)
+    # set_option('display.max_colwidth', None)
+    # set_option('display.max_columns', 10)
+    # print(dataset.df.head(10))
+
+
 
 if __name__ == "__main__":
     main()
