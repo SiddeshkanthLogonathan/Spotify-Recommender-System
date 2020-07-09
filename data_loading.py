@@ -1,4 +1,4 @@
-from pandas import read_csv, DataFrame
+from pandas import read_csv, DataFrame, set_option
 from torch.utils.data import Dataset, DataLoader
 from torch import tensor, set_printoptions
 from ast import literal_eval
@@ -7,7 +7,7 @@ import typing
 
 class SpotifyRecommenderDataset(Dataset):
     COLUMNS_TO_DROP = ['explicit', 'id', 'release_date', 'artists', 'name']
-    COLUMNS_TO_NORMALIZE = ['key', 'loudness', 'popularity', 'tempo', 'speechiness', 'year']
+    COLUMNS_TO_NORMALIZE = ['key', 'loudness', 'popularity', 'tempo', 'speechiness', 'year', 'duration_ms']
 
     def __init__(self, data_path='data/data.csv', data_w_genres_path='data/data_w_genres.csv'):
         self.df = read_csv(data_path)
@@ -24,13 +24,16 @@ class SpotifyRecommenderDataset(Dataset):
     def _join_genres_into_songs(self):
         self.df['genres'] = [list()] * len(self.df)
         for i in range(len(self.df)):
-            print(i)
+            for artists in self.df.loc[i, 'artists']:
+                    genres = []
+                    
+                    genres_for_artists = self.df_w_genres.loc[self.df_w_genres['artists'] == artists, 'genres']
+                
+                    for genre_list in genres_for_artists:
+                        genres.extend(genres)
+                        unique_sorted_genres = sorted(list(set(self.df.loc[i, 'genres'])))
+                        self.df.loc[i, 'genres'] = list(range(100))
 
-            for artist in self.df.loc[i, 'artists']:
-                genres = self.df_w_genres.loc[self.df_w_genres['artists'] == artist, 'genres']
-                for genre in genres:
-                    self.df.loc[i, 'genres'].append(genre)
-            
             if i == 100:
                 break
 
@@ -57,7 +60,10 @@ class SpotifyRecommenderDataset(Dataset):
 
 def main():
     dataset = SpotifyRecommenderDataset()
-    print(dataset.df['genres'].head(42))
+    #set_option('display.max_colwidth', -1)
+    set_option('display.max_colwidth', None)
+    set_option('display.max_columns', 10)
+    print(dataset.df[['artists', 'genres']].head(100))
     
 
 if __name__ == "__main__":
