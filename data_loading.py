@@ -4,7 +4,7 @@ from torch import tensor, set_printoptions
 
 class SpotifyRecommenderDataset(Dataset):
     COLUMNS_TO_DROP = ['explicit', 'id', 'release_date', 'artists', 'name']
-    COLUMNS_TO_NORMALIZE = ['key', 'loudness', 'popularity', 'tempo', 'speechiness', 'year']
+    COLUMNS_TO_NORMALIZE = ['key', 'loudness', 'popularity', 'tempo', 'speechiness', 'year', 'duration_ms']
 
     def __init__(self, data_path='data/data.csv'):
         self.df = read_csv(data_path)

@@ -19,7 +19,7 @@ print(d.tensor.shape)
 
 criterion = nn.MSELoss()
 #optimizer = optim.Adam(n.parameters(), lr=0.0003)
-my_optim = torch.optim.Adam(params=n.parameters(), lr=0.009, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
+my_optim = torch.optim.Adam(params=n.parameters(), lr=0.01, betas=(0.9, 0.999), eps=1e-08, weight_decay=0, amsgrad=False)
 
 decayRate = 0.5
 my_lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=my_optim, gamma=decayRate)
@@ -54,7 +54,7 @@ def train(n, num_epochs):
 
 print(n.enc1.weight)
 
-plt.plot(train(n, 10)[2:])
+plt.plot(train(n, 20)[2:])
 plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.show()

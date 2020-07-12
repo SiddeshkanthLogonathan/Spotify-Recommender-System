@@ -9,6 +9,7 @@ def init_weights(m):
 
 class Autoencoder(nn.Module):
 
+    # LAYER_SIZES = [14, 9, 3]
     LAYER_SIZES = [14, 10, 6, 3]
     
     def __init__(self):
@@ -48,14 +49,14 @@ class Autoencoder(nn.Module):
     def encode(self, x):
         x = F.relu(self.enc1(x))
         x = F.relu(self.enc2(x))
-        x = F.relu(self.enc3(x))
+        # x = F.relu(self.enc3(x))
         
         return x
     
     def decode(self, x):
-        x = F.relu(self.dec1(x))
+        # x = F.relu(self.dec1(x))
         x = F.relu(self.dec2(x))
-        x = F.sigmoid(self.dec3(x))
+        x = F.relu(self.dec3(x))
 
         return x
 
