@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 # import d2l
+import time
 import matplotlib.pyplot as plt
 
 
@@ -14,7 +15,7 @@ n.buildArchitecture()
 n = n.double()
 d = SpotifyRecommenderDataset()
 
-print(d.tensor.shape)
+# print(d.shape)
 
 
 criterion = nn.MSELoss()
@@ -32,9 +33,16 @@ def train(n, num_epochs):
     train_loss = []
     for epoch in range(num_epochs):
         running_loss = 0.0
-        for index, value in enumerate(trainloader):
+        for value in trainloader:
+            prev = time.time()
             my_optim.zero_grad()
+            with torch.no_grad():
+                value = n.transform(value)
+            # print(value.shape)
+
             outputs = n(value)
+            # print("outputs: ", outputs)
+            # print("values: ",value)
             loss = criterion(outputs, value)
             loss.backward()
             my_optim.step()
@@ -52,7 +60,7 @@ def train(n, num_epochs):
         print(train_loss)
     return train_loss
 
-print(n.enc1.weight)
+# print(n.enc1.weight)
 
 plt.plot(train(n, 20)[2:])
 plt.ylabel('loss')
