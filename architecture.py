@@ -22,7 +22,7 @@ class Autoencoder(nn.Module):
     def buildArchitecture(self):
 
         self.emb_artists = nn.Embedding(27621, 5)
-        self.emb_genres = nn.Embedding(2663, 5)
+        self.emb_genres = nn.Embedding(2664, 5)
 
         # encoding architecture
         self.enc1 = nn.Linear(
@@ -47,25 +47,32 @@ class Autoencoder(nn.Module):
             out_features = self.LAYER_SIZES[0])
 
     def transform(self, x):
-        print("TRANSFORMERS")
-        # print(x[0].long())
-        # prev = time.time()
-        index_artists = [np.where(r==1) for r in x[0].numpy()]
-        print("got index: ", index_artists)
-        index_genre = [np.where(r==1) for r in x[2].numpy()]
-        artists_embedding = self.emb_artists(index_artists)
-        genres_embedding = self.emb_genres(index_genre)
-        flattened_genres = genres_embedding[:,0,0,:]
-        flattened_artist = artists_embedding[:,0,0,:]
-        # print(flattened_artist.shape)
-        # print(flattened_genres.shape)
-        x = torch.cat((flattened_artist, x[1], flattened_genres), 1)
-        # print("needed: ", (time.time() - prev))
-        return x
+        print("TRANSFORMEN MERS")
+        out = None
+        for i in range(x[0].shape[0]):
+            index_artists = [np.where(r==1) for r in (x[0].squeeze()[i]).numpy()]
+            index_artists = torch.tensor(index_artists[0][0])
+
+            index_genre = [np.where(r==1) for r in x[2][i].numpy()]
+            index_genre = torch.tensor(index_genre[0][0])
+            if(len(index_genre) == 0):
+                index_genre = torch.tensor([2663])
+
+            artists_embedding = self.emb_artists(index_artists)
+            genres_embedding = self.emb_genres(index_genre)
+
+            artists_embedding = torch.sum(artists_embedding, dim = 0) / artists_embedding.shape[0]
+            genres_embedding = torch.sum(genres_embedding, dim = 0) / genres_embedding.shape[0]
+            temp_x = torch.cat((artists_embedding.double(), x[1][i].double(), genres_embedding.double()), 0)
+            if out is None:
+                out = temp_x.unsqueeze(0)
+            else: 
+                out = torch.cat((out, temp_x.unsqueeze(0)), dim = 0)
+        return out
 
     def forward(self, x):
-        x = self.encode(x)
-        x = self.decode(x)
+        x = self.encode(x.double())
+        x = self.decode(x.double())
 
         return x
 
