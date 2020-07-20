@@ -34,7 +34,10 @@ def train(n, num_epochs):
     train_loss = []
     for epoch in range(num_epochs):
         running_loss = 0.0
-        for value in trainloader:
+        prev = time.time()
+        for index, value in enumerate(trainloader):
+            print("patch learned! ", index, " of ", len(trainloader), " time spent: ", (time.time() - prev))
+            prev = time.time()
             my_optim.zero_grad()
             with torch.no_grad():
                 value = n.transform(value)
@@ -72,3 +75,5 @@ for data in d:
     if(counter == 2):
         break
     counter += 1
+
+torch.save(n, './model.pth')
