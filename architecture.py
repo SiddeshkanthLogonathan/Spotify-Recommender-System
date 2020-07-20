@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import time
+from itertools import chain
 
 
 def init_weights(m):
@@ -14,6 +15,7 @@ def init_weights(m):
 class Autoencoder(nn.Module):
     # LAYER_SIZES = [14, 9, 3]
     LAYER_SIZES = [20, 10, 6, 3]
+    LAYER_COUNT = len(LAYER_SIZES)
 
     def __init__(self):
         super(Autoencoder, self).__init__()
@@ -22,10 +24,25 @@ class Autoencoder(nn.Module):
 
     def buildArchitecture(self):
 
-        self.emb_artists = nn.Embedding(27621, 3)
-        self.emb_genres = nn.Embedding(2664, 3)
+        self.artist_embedder = nn.Embedding(27621, 3)
+        self.genre_embedder = nn.Embedding(2664, 3)
 
         # encoding architecture
+        encoding_linear_layers = [nn.Linear(self.LAYER_SIZES[i], self.LAYER_SIZES[i+1]) for i in range(self.LAYER_COUNT - 1)]
+        encoding_activation_layers = [torch.nn.ReLU() for i in range(len(encoding_linear_layers))]
+        
+        reverse_layer_sizes = list(reversed(self.LAYER_SIZES))
+        decoding_linear_layers = [nn.Linear(reverse_layer_sizes[i], reverse_layer_sizes[i+1]) for i in range(self.LAYER_COUNT - 1)]
+        decoding_activation_layers = [torch.nn.ReLU() for i in range(len(encoding_linear_layers))]
+
+        encoding_layers = list(chain.from_iterable(zip(encoding_linear_layers, encoding_activation_layers)))
+        decoding_layers = list(chain.from_iterable(zip(decoding_linear_layers, decoding_activation_layers)))
+
+        self.encoding_module = nn.Sequential(*encoding_layers)
+        self.decoding_module = nn.Sequential(*decoding_layers)
+
+
+
         self.enc1 = nn.Linear(
             in_features=self.LAYER_SIZES[0],
             out_features=self.LAYER_SIZES[1])
@@ -55,14 +72,14 @@ class Autoencoder(nn.Module):
 
             indices = list(filter((0).__ne__, x[i][0]))
             indices = torch.LongTensor(indices)
-            artists_embedding = self.emb_artists(indices)
+            artists_embedding = self.artist_embedder(indices)
 
             indices = list(filter((0).__ne__, x[i][2]))
             indices = list(filter(lambda idx: idx < 2664, indices))
             if len(indices) == 0:
                 indices = [0]
             indices = torch.LongTensor(indices)
-            genres_embedding = self.emb_genres(indices)
+            genres_embedding = self.genre_embedder(indices)
 
             artists_embedding = torch.sum(artists_embedding, dim=0) / artists_embedding.shape[0]
             genres_embedding = torch.sum(genres_embedding, dim=0) / genres_embedding.shape[0]
@@ -76,22 +93,10 @@ class Autoencoder(nn.Module):
         return out
 
     def forward(self, x):
-        x = self.encode(x.double())
-        x = self.decode(x.double())
-
-        return x
+        return self.decode(self.encode(x))
 
     def encode(self, x):
-
-        x = F.relu(self.enc1(x))
-        x = F.relu(self.enc2(x))
-        x = F.relu(self.enc3(x))
-
-        return x
+        return self.encoding_module(x)
 
     def decode(self, x):
-        x = F.relu(self.dec1(x))
-        x = F.relu(self.dec2(x))
-        x = F.relu(self.dec3(x))
-
-        return x
+        return self.decoding_module(x)
