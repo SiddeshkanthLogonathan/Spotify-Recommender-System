@@ -2,7 +2,7 @@ import pandas as pd
 import torch
 import os
 from torch.utils.data import Dataset
-from typing import Tuple, Union
+from typing import Tuple, Union, List
 from ast import literal_eval
 from itertools import chain
 from tqdm import tqdm
@@ -13,7 +13,7 @@ class SpotifyRecommenderDataset(Dataset):
     NUMERIC_COLUMNS = ["acousticness", "danceability", "duration_ms", "energy", "instrumentalness", "key",
                             "liveness", "loudness", "mode", "popularity", "speechiness", "tempo", "valence"]
     DISTINCT_ARTISTS_COUNT = 27621
-    DISTINCT_GENRES_COUNT = 2663
+    DISTINCT_GENRES_COUNT = 17491
     NUMERIC_FIELDS_COUNT = 14
 
     def __init__(self, data_path='data/data.csv', data_w_genres_path='data/data_w_genres.csv',
@@ -62,9 +62,9 @@ class SpotifyRecommenderDataset(Dataset):
                 numerized_genres = [genre_for_songs_without_genres]
                 genre_for_songs_without_genres += 1
 
-            numerized_genres_column.append(torch.LongTensor(numerized_genres))
+            numerized_genres_column.append(numerized_genres)
 
-        numerized_genres_column = torch.transpose(torch.nn.utils.rnn.pad_sequence(numerized_genres_column), 0, 1).tolist()
+        #numerized_genres_column = torch.transpose(torch.nn.utils.rnn.pad_sequence(numerized_genres_column), 0, 1).tolist()
 
         self.df['genres'] = numerized_genres_column
 
@@ -79,9 +79,9 @@ class SpotifyRecommenderDataset(Dataset):
                 numerized_artists = [artist_index_for_songs_without_artist]
                 artist_index_for_songs_without_artist += 1
 
-            numerized_artists_column.append(torch.LongTensor(numerized_artists))
+            numerized_artists_column.append(numerized_artists)
 
-        numerized_artists_column = torch.transpose(torch.nn.utils.rnn.pad_sequence(numerized_artists_column), 0, 1).tolist()
+        #numerized_artists_column = torch.transpose(torch.nn.utils.rnn.pad_sequence(numerized_artists_column), 0, 1).tolist()
 
         self.df['artists'] = numerized_artists_column
 
@@ -102,7 +102,10 @@ class SpotifyRecommenderDataset(Dataset):
     def __len__(self):
         return len(self.df.index)
 
-    def __getitem__(self, idx: Union[int, slice, list]) -> Tuple[torch.tensor, torch.tensor, torch.tensor]:
+    
+    ReturnType = Tuple[List, torch.tensor, List]
+
+    def __getitem__(self, idx: Union[int, slice, list]) -> ReturnType:
         numeric_fields = self.df.loc[idx, self.df.columns.difference(['artists', 'genres'])]
         numeric_fields_tensor = torch.tensor(numeric_fields.values.astype('float32')).squeeze()
 
@@ -110,3 +113,13 @@ class SpotifyRecommenderDataset(Dataset):
         genres = list(self.df.loc[idx, 'genres'])
 
         return artists, numeric_fields_tensor, genres
+
+def SpotifyRecommenderDataLoader(*args, **kwargs):
+    def own_collate_fn(batch: List[SpotifyRecommenderDataset.ReturnType]) -> SpotifyRecommenderDataset.ReturnType:
+        all_artists = [artists for artists, numeric_fields, genres in batch]
+        numeric_fields = torch.stack([numeric_fields for artists, numeric_fields, genres in batch])
+        all_genres = [genres for artists, numeric_fields, genres in batch]
+
+        return all_artists, numeric_fields, all_genres
+
+    return torch.utils.data.DataLoader(*args, **kwargs, collate_fn=own_collate_fn)
