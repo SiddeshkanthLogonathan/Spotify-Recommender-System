@@ -13,7 +13,6 @@ def init_weights(m):
 
 
 class Autoencoder(nn.Module):
-    # LAYER_SIZES = [14, 9, 3]
     LAYER_SIZES = [20, 10, 6, 3]
     LAYER_COUNT = len(LAYER_SIZES)
 
@@ -40,29 +39,6 @@ class Autoencoder(nn.Module):
 
         self.encoding_module = nn.Sequential(*encoding_layers)
         self.decoding_module = nn.Sequential(*decoding_layers)
-
-
-
-        self.enc1 = nn.Linear(
-            in_features=self.LAYER_SIZES[0],
-            out_features=self.LAYER_SIZES[1])
-        self.enc2 = nn.Linear(
-            in_features=self.LAYER_SIZES[1],
-            out_features=self.LAYER_SIZES[2])
-        self.enc3 = nn.Linear(
-            in_features=self.LAYER_SIZES[2],
-            out_features=self.LAYER_SIZES[3])
-
-        # decoding architecture
-        self.dec1 = nn.Linear(
-            in_features=self.LAYER_SIZES[3],
-            out_features=self.LAYER_SIZES[2])
-        self.dec2 = nn.Linear(
-            in_features=self.LAYER_SIZES[2],
-            out_features=self.LAYER_SIZES[1])
-        self.dec3 = nn.Linear(
-            in_features=self.LAYER_SIZES[1],
-            out_features=self.LAYER_SIZES[0])
 
     def transform(self, x):
 
