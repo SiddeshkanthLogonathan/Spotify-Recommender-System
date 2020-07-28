@@ -4,26 +4,6 @@ import json
 import sys
 import os
 
-# class Song():
-#     def __init__(self):
-#         self.name = ""
-#         self.id = "None"
-#         self.accousticness = 0
-#         self.danceability = 0
-#         self.duration_ms = 0
-#         self.energy = 0
-#         self.instrumentalness = 0
-#         self.key = 0
-#         self.liveness = 0
-#         self.loudness = 0
-#         self.mode = 0
-#         self.popularity = 0
-#         self.speechiness = 0
-#         self.tempo = 0
-#         self.artist = []
-#         self.genre = []
-
-
 mandatory_keys = [
     "name", "accousticness", "danceability", 
     "duration_ms", "energy", "instrumentalness", "key", 
@@ -101,12 +81,11 @@ def add_song_encoding(song, net = torch.load('./model.pth'), encoding_path = "da
     except:
         print("could not delete pickle file")
     new_dataset = SpotifyRecommenderDataset()
-    new_encodings = net(new_dataset[len(new_dataset) - 1]).tolist()
+    new_encodings = net.encode(new_dataset[len(new_dataset) - 1].training_label).tolist()
     values_to_write = [song["name"], song["artist"]]
     values_to_write += new_encodings
     with open(encoding_path, "a") as file:
         file.write(str(values_to_write)[1:-1] + '\n')
-
 
 def add_new_song(song):
     print("adding new song!")
@@ -119,6 +98,7 @@ def main():
         song = json.load(sys.stdin)
     except:
         print("no valid json input provided!")
+        sys.exit(1)
     
     corrupted = False
     for key in mandatory_keys:

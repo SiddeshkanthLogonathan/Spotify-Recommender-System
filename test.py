@@ -24,7 +24,8 @@ with torch.no_grad():
             break
         if(index % 2000 == 0):
             print("progress: ", index / len(dataset) * 100, "%")
-        value = value.double()
+        value = value.training_label
+        # value = value.double()
         encoded_value = net.encode(value)
         value_to_save = [song_names[index-1], song_artists[index-1]]
         value_to_save += encoded_value.tolist()
@@ -34,7 +35,7 @@ with torch.no_grad():
         running_loss += loss
     print("Got overall testing loss: ", running_loss / len(dataset))
     print("encodings shape: ", len(encodings),", ", len(encodings[0]))
-
+encoding_input
 with open("data/encodings.csv","w+") as file:
     csvWriter = csv.writer(file,delimiter=',')
     csvWriter.writerows(encodings)

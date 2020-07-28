@@ -3,6 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import time
+from itertools import chain
+from typing import List
+from data_loading import SpotifyRecommenderDataset, SpotifyRecommenderDataLoader
 
 
 def init_weights(m):
@@ -12,8 +15,10 @@ def init_weights(m):
 
 
 class Autoencoder(nn.Module):
-    LAYER_SIZES = [14, 10, 6, 3]
-    # LAYER_SIZES = [20, 10, 6, 3]
+    ENCODING_LAYER_SIZES = [14, 10, 6, 3]
+    DECODING_LAYER_SIZES = [3, 6, 10, 14]
+    ENCODING_LAYER_COUNT = len(ENCODING_LAYER_SIZES)
+    DECODING_LAYER_COUNT = len(DECODING_LAYER_SIZES)
 
     def __init__(self):
         super(Autoencoder, self).__init__()
@@ -21,77 +26,51 @@ class Autoencoder(nn.Module):
         self.apply(init_weights)
 
     def buildArchitecture(self):
-
-        # self.emb_artists = nn.Embedding(27621, 3)
-        # self.emb_genres = nn.Embedding(2664, 3)
+        # self.artist_embedder = nn.Embedding(SpotifyRecommenderDataset.DISTINCT_ARTISTS_COUNT, 3)
+        # self.genre_embedder = nn.Embedding(SpotifyRecommenderDataset.DISTINCT_GENRES_COUNT, 3)
 
         # encoding architecture
-        self.enc1 = nn.Linear(
-            in_features=self.LAYER_SIZES[0],
-            out_features=self.LAYER_SIZES[1])
-        self.enc2 = nn.Linear(
-            in_features=self.LAYER_SIZES[1],
-            out_features=self.LAYER_SIZES[2])
-        self.enc3 = nn.Linear(
-            in_features=self.LAYER_SIZES[2],
-            out_features=self.LAYER_SIZES[3])
+        encoding_linear_layers = [nn.Linear(self.ENCODING_LAYER_SIZES[i], self.ENCODING_LAYER_SIZES[i + 1]) for i in
+                                  range(self.ENCODING_LAYER_COUNT - 1)]
+        encoding_activation_layers = [torch.nn.ReLU() for i in range(len(encoding_linear_layers))]
 
-        # decoding architecture
-        self.dec1 = nn.Linear(
-            in_features=self.LAYER_SIZES[3],
-            out_features=self.LAYER_SIZES[2])
-        self.dec2 = nn.Linear(
-            in_features=self.LAYER_SIZES[2],
-            out_features=self.LAYER_SIZES[1])
-        self.dec3 = nn.Linear(
-            in_features=self.LAYER_SIZES[1],
-            out_features=self.LAYER_SIZES[0])
+        decoding_linear_layers = [nn.Linear(self.DECODING_LAYER_SIZES[i], self.DECODING_LAYER_SIZES[i + 1]) for i in
+                                  range(self.DECODING_LAYER_COUNT - 1)]
+        decoding_activation_layers = [torch.nn.ReLU() for i in range(len(encoding_linear_layers))]
 
-    def transform(self, x):
+        encoding_layers = list(chain.from_iterable(zip(encoding_linear_layers, encoding_activation_layers)))
+        decoding_layers = list(chain.from_iterable(zip(decoding_linear_layers, decoding_activation_layers)))
 
-        out = None
+        self.encoding_module = nn.Sequential(*encoding_layers)
+        self.decoding_module = nn.Sequential(*decoding_layers)
 
-        for i in range(len(x)):
+    def _embed_artists_or_genres(self, artist_or_genres_lists: List[List[int]], embedder: nn.Embedding) -> torch.tensor:
+        avg_embeddings = []
+        for artist_or_genre_list in artist_or_genres_lists:
+            input_tensor = torch.tensor(artist_or_genre_list)
+            embeddings = embedder(input_tensor)
+            avg_embedding = torch.mean(embeddings, dim=0)
+            avg_embeddings.append(avg_embedding)
 
-            indices = list(filter((0).__ne__, x[i][0]))
-            indices = torch.LongTensor(indices)
-            artists_embedding = self.emb_artists(indices)
+        return torch.stack(avg_embeddings)
 
-            indices = list(filter((0).__ne__, x[i][2]))
-            indices = list(filter(lambda idx: idx < 2664, indices))
-            if len(indices) == 0:
-                indices = [0]
-            indices = torch.LongTensor(indices)
-            genres_embedding = self.emb_genres(indices)
+    def _embed_artists(self, artist_lists: List[List[int]]) -> torch.tensor:
+        return self._embed_artists_or_genres(artist_lists, self.artist_embedder)
 
-            artists_embedding = torch.sum(artists_embedding, dim=0) / artists_embedding.shape[0]
-            genres_embedding = torch.sum(genres_embedding, dim=0) / genres_embedding.shape[0]
+    def _embed_genres(self, genre_lists: List[List[int]]) -> torch.tensor:
+        return self._embed_artists_or_genres(genre_lists, self.genre_embedder)
 
-            temp_x = torch.cat((artists_embedding.double(), x[i][1].double(), genres_embedding.double()), 0)
-            if out is None:
-                out = temp_x.unsqueeze(0)
-            else:
-                out = torch.cat((out, temp_x.unsqueeze(0)), dim=0)
+    def forward(self, batch: SpotifyRecommenderDataset.ReturnType) -> torch.tensor:
+        # artists, numeric_fields_tensor, genres = batch.artists, batch.numeric_fields, batch.genres
+        # artist_embeddings = self._embed_artists(artists)
+        # genre_embeddings = self._embed_genres(genres)
 
-        return out
+        # encoding_input = torch.cat([artist_embeddings, numeric_fields_tensor, genre_embeddings], dim=1)
 
-    def forward(self, x):
-        x = self.encode(x.double())
-        x = self.decode(x.double())
+        return self.decode(self.encode(batch.training_label))
 
-        return x
+    def encode(self, x: torch.tensor):
+        return self.encoding_module(x)
 
-    def encode(self, x):
-
-        x = F.relu(self.enc1(x))
-        x = F.relu(self.enc2(x))
-        x = F.relu(self.enc3(x))
-
-        return x
-
-    def decode(self, x):
-        x = F.relu(self.dec1(x))
-        x = F.relu(self.dec2(x))
-        x = F.relu(self.dec3(x))
-
-        return x
+    def decode(self, x: torch.tensor):
+        return self.decoding_module(x)
