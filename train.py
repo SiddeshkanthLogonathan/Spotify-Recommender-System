@@ -2,11 +2,12 @@ from data_loading import SpotifyRecommenderDataset, SpotifyRecommenderDataLoader
 from architecture import Autoencoder
 import torch
 import torch.nn as nn
+import matplotlib.pyplot as plt
 import time
 
 
 default_model = Autoencoder()
-default_num_epochs = 10
+default_num_epochs = 2
 default_dataset = SpotifyRecommenderDataset()
 default_batch_size = 256
 default_dataloader = SpotifyRecommenderDataLoader(default_dataset, batch_size=default_batch_size, shuffle=True)
@@ -26,13 +27,15 @@ def train(model=default_model, num_epochs=default_num_epochs, dataloader=default
         running_loss = 0.0
         prev = time.time()
         for index, batch in enumerate(dataloader):
-            label = batch.training_label
-            print("patch learned! ", index, " of ", len(dataloader), " time spent: ", (time.time() - prev))
-            prev = time.time()
+            train_data = batch.training_label
+            if(index % 100 == 0):
+                print("patch learned! ", index, " of ", len(dataloader))
             optimizer.zero_grad()
-            #with torch.no_grad():
+            # train_data = pad_sequence(batch, batch_first=True).double()
             outputs = model(batch)
-            loss = criterion(outputs, label)
+            loss = criterion(outputs, train_data)
+            if(index % 100 == 0):
+                print("current loss: ", loss)
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
@@ -43,10 +46,15 @@ def train(model=default_model, num_epochs=default_num_epochs, dataloader=default
         # animator.add(epoch,(loss))
         train_loss.append(loss)
 
-        print('Epoch {} of {}, Train Loss: {:.3f}'.format(
-            epoch + 1, num_epochs, loss))
+        print('Epoch {} of {}, Train Loss: {:.3f}, Time spent: {}'.format(
+            epoch + 1, num_epochs, loss, time.time()-prev))
 
         print(train_loss)
     return train_loss
 
-train()
+plt.plot(train()[2:])
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.show()
+
+torch.save(default_model, './model.pth')

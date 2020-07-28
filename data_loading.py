@@ -11,7 +11,7 @@ from collections import namedtuple
 
 
 class SpotifyRecommenderDataset(Dataset):
-    COLUMNS_TO_DROP = ['explicit', 'id', 'release_date', 'name']
+    COLUMNS_TO_DROP = ['explicit', 'id', 'release_date', 'name', 'artists']
     NUMERIC_COLUMNS = ["acousticness", "danceability", "duration_ms", "energy", "instrumentalness", "key",
                        "liveness", "loudness", "mode", "popularity", "speechiness", "tempo", "valence"]
     DISTINCT_ARTISTS_COUNT = 27621
@@ -22,18 +22,18 @@ class SpotifyRecommenderDataset(Dataset):
                  data_by_genres_path='data/data_by_genres.csv', pickle_path='data/dataset.pkl'):
         """Because the dataset is stored once it is created, only the first initialization takes long."""
 
-        self.df_w_genres = pd.read_csv(data_w_genres_path)
-        self.df_by_genres = pd.read_csv(data_by_genres_path)
-        self._convert_string_column_to_list_type(self.df_w_genres, 'genres')
+        # self.df_w_genres = pd.read_csv(data_w_genres_path)
+        # self.df_by_genres = pd.read_csv(data_by_genres_path)
+        # self._convert_string_column_to_list_type(self.df_w_genres, 'genres')
 
         if os.path.exists(pickle_path):
             self.df = pd.read_pickle(pickle_path)
         else:
             self.df = pd.read_csv(data_path)
-            self._convert_string_column_to_list_type(self.df, 'artists')
+            # self._convert_string_column_to_list_type(self.df, 'artists')
             self._drop_unnecessary_columns()
-            self.df['genres'] = self._genres_column()
-            self._numerize_genres_and_artists_columns()
+            # self.df['genres'] = self._genres_column()
+            # self._numerize_genres_and_artists_columns()
             self._normalize_numeric_columns()
             self.df.to_pickle(pickle_path)
 
@@ -115,31 +115,36 @@ class SpotifyRecommenderDataset(Dataset):
         numeric_fields = self.df.loc[idx, self.df.columns.difference(['artists', 'genres'])]
         numeric_fields_tensor = torch.tensor(numeric_fields.values.astype('float32')).squeeze()
 
-        artists = list(self.df.loc[idx, 'artists'])
-        genres = list(self.df.loc[idx, 'genres'])
+        # artists = list(self.df.loc[idx, 'artists'])
+        # genres = list(self.df.loc[idx, 'genres'])
 
-        mean_normalized_artist = self._normalize_artist_index(mean(artists))
-        mean_normalized_genre = self._normalize_genre_index(mean(genres))
+        # mean_normalized_artist = self._normalize_artist_index(mean(artists))
+        # mean_normalized_genre = self._normalize_genre_index(mean(genres))
 
-        mean_normalized_artist_tensor = torch.tensor([mean_normalized_artist])
-        mean_normalized_genre_tensor = torch.tensor([mean_normalized_genre])
+        # mean_normalized_artist_tensor = torch.tensor([mean_normalized_artist])
+        # mean_normalized_genre_tensor = torch.tensor([mean_normalized_genre])
 
-        training_label_tensor = torch.cat(
-            [mean_normalized_artist_tensor, numeric_fields_tensor, mean_normalized_genre_tensor]
-        )
+        # training_label_tensor = torch.cat(
+        #     [mean_normalized_artist_tensor, numeric_fields_tensor, mean_normalized_genre_tensor]
+        # )
 
-        return self.ReturnType(artists=artists, numeric_fields=numeric_fields_tensor, genres=genres,
-                               training_label=training_label_tensor)
+        # return self.ReturnType(artists=artists, numeric_fields=numeric_fields_tensor, genres=genres,
+        #                        training_label=training_label_tensor)
+
+        return self.ReturnType(artists=None, numeric_fields=None, genres=None,
+                               training_label=numeric_fields_tensor)
 
 
 def SpotifyRecommenderDataLoader(*args, **kwargs):
     def custom_collate_fn(batch: List[SpotifyRecommenderDataset.ReturnType]) -> SpotifyRecommenderDataset.ReturnType:
-        all_artists = [sample.artists for sample in batch]
-        all_numeric_fields = torch.stack([sample.numeric_fields for sample in batch])
-        all_genres = [sample.genres for sample in batch]
+        # all_artists = [sample.artists for sample in batch]
+        # all_numeric_fields = torch.stack([sample.numeric_fields for sample in batch])
+        # all_genres = [sample.genres for sample in batch]
         all_training_labels = torch.stack([sample.training_label for sample in batch])
 
-        return SpotifyRecommenderDataset.ReturnType(artists=all_artists, numeric_fields=all_numeric_fields,
-                                                    genres=all_genres, training_label=all_training_labels)
+        # return SpotifyRecommenderDataset.ReturnType(artists=all_artists, numeric_fields=all_numeric_fields,
+        #                                             genres=all_genres, training_label=all_training_labels)
+        return SpotifyRecommenderDataset.ReturnType(artists=None, numeric_fields=None,
+                                                    genres=None, training_label=all_training_labels)
 
     return torch.utils.data.DataLoader(*args, **kwargs, collate_fn=custom_collate_fn)

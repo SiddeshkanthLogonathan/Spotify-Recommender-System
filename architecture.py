@@ -15,8 +15,8 @@ def init_weights(m):
 
 
 class Autoencoder(nn.Module):
-    ENCODING_LAYER_SIZES = [20, 10, 6, 3]
-    DECODING_LAYER_SIZES = [3, 6, 10, 16]
+    ENCODING_LAYER_SIZES = [14, 10, 6, 3]
+    DECODING_LAYER_SIZES = [3, 6, 10, 14]
     ENCODING_LAYER_COUNT = len(ENCODING_LAYER_SIZES)
     DECODING_LAYER_COUNT = len(DECODING_LAYER_SIZES)
 
@@ -26,8 +26,8 @@ class Autoencoder(nn.Module):
         self.apply(init_weights)
 
     def buildArchitecture(self):
-        self.artist_embedder = nn.Embedding(SpotifyRecommenderDataset.DISTINCT_ARTISTS_COUNT, 3)
-        self.genre_embedder = nn.Embedding(SpotifyRecommenderDataset.DISTINCT_GENRES_COUNT, 3)
+        # self.artist_embedder = nn.Embedding(SpotifyRecommenderDataset.DISTINCT_ARTISTS_COUNT, 3)
+        # self.genre_embedder = nn.Embedding(SpotifyRecommenderDataset.DISTINCT_GENRES_COUNT, 3)
 
         # encoding architecture
         encoding_linear_layers = [nn.Linear(self.ENCODING_LAYER_SIZES[i], self.ENCODING_LAYER_SIZES[i + 1]) for i in
@@ -61,13 +61,13 @@ class Autoencoder(nn.Module):
         return self._embed_artists_or_genres(genre_lists, self.genre_embedder)
 
     def forward(self, batch: SpotifyRecommenderDataset.ReturnType) -> torch.tensor:
-        artists, numeric_fields_tensor, genres = batch.artists, batch.numeric_fields, batch.genres
-        artist_embeddings = self._embed_artists(artists)
-        genre_embeddings = self._embed_genres(genres)
+        # artists, numeric_fields_tensor, genres = batch.artists, batch.numeric_fields, batch.genres
+        # artist_embeddings = self._embed_artists(artists)
+        # genre_embeddings = self._embed_genres(genres)
 
-        encoding_input = torch.cat([artist_embeddings, numeric_fields_tensor, genre_embeddings], dim=1)
+        # encoding_input = torch.cat([artist_embeddings, numeric_fields_tensor, genre_embeddings], dim=1)
 
-        return self.decode(self.encode(encoding_input))
+        return self.decode(self.encode(batch.training_label))
 
     def encode(self, x: torch.tensor):
         return self.encoding_module(x)
