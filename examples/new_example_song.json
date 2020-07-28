@@ -1,0 +1,17 @@
+{
+    "name": "example song", 
+    "accousticness": 100, 
+    "danceability": 100, 
+    "duration_ms": 1000,
+    "energy": 100, 
+    "instrumentalness": 12,
+    "key": 80, 
+    "liveness": 100, 
+    "loudness": 12, 
+    "mode": 14, 
+    "popularity": 1000, 
+    "speechiness": 12,
+    "tempo": 180, 
+    "artist": ["Frank Walter Steinmeier"], 
+    "genre": ["letztes"]
+}

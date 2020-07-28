@@ -12,8 +12,8 @@ def init_weights(m):
 
 
 class Autoencoder(nn.Module):
-    # LAYER_SIZES = [14, 9, 3]
-    LAYER_SIZES = [20, 10, 6, 3]
+    LAYER_SIZES = [14, 10, 6, 3]
+    # LAYER_SIZES = [20, 10, 6, 3]
 
     def __init__(self):
         super(Autoencoder, self).__init__()
@@ -22,8 +22,8 @@ class Autoencoder(nn.Module):
 
     def buildArchitecture(self):
 
-        self.emb_artists = nn.Embedding(27621, 3)
-        self.emb_genres = nn.Embedding(2664, 3)
+        # self.emb_artists = nn.Embedding(27621, 3)
+        # self.emb_genres = nn.Embedding(2664, 3)
 
         # encoding architecture
         self.enc1 = nn.Linear(
