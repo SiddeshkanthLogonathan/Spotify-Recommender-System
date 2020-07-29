@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import torch
 from model_testing import get_encodings
+from data_loading import SpotifyRecommenderDataset
 
 ## This is used to simulate our 3d Dataset that we will use to visualize. It is unnecessary once we have our data
 def generate_dummy_values(low, high):
@@ -45,12 +46,23 @@ class KNN:
     COLOR_OF_CHOSEN_POINT = 'red'
     COLOR_OF_K_NEIGHBOURS = 'mediumpurple'
 
-    def __init__(self):
-        with torch.no_grad():
-            self.points = get_encodings().numpy()
+    def __init__(self, dataset: SpotifyRecommenderDataset()):
+        self.dataset = dataset
+        self.points = dataset.df[['encoding_x', 'encoding_y', 'encoding_z']].values
 
-        self.df = pd.read_csv('data/data.csv')
+    def knn_query(self, song_id: str, k: int):
+        boolean_index = self.dataset.df['id'] == song_id
+        index_of_chosen_point = self.dataset.df.index[boolean_index].item()
+        knn_indices = self.compute_k_nearest_neighbours(index_of_chosen_point, k)
 
+        chosen_song_df = self.dataset.df.iloc[index_of_chosen_point, :]
+        chosen_song_df['color'] = 1
+        chosen_song_df['symbol'] = 1
+        knn_df = self.dataset.df.iloc[knn_indices, :]
+        knn_df['color'] = 0
+        knn_df['symbol'] = 0
+
+        return chosen_song_df, knn_df
 
     def compute_k_nearest_neighbours(self, index_of_chosen_point, k):
         chosen_point = self.points[index_of_chosen_point]
@@ -61,37 +73,16 @@ class KNN:
             dist_array.append(dist)
 
         closest = np.argsort(dist_array)  # Sort it based on closest to furthest for each point
-        neighbours_indices = self.k_nearest_neighbours_indices(closest, k)  # indexes of k nearest neighbours
 
-        #self.update_point_color(index_of_chosen_point, self.COLOR_OF_CHOSEN_POINT)
-        #self.update_point_color(self.neighbours_indices, self.COLOR_OF_K_NEIGHBOURS)
-
-        indices = [index_of_chosen_point] + neighbours_indices
-        knn_df = self.df.loc[indices]
-        encodings_of_neighbours = self.points[indices]
-
-        knn_df['encoding_x_column'] = encodings_of_neighbours[:, 0]
-        knn_df['encoding_y_column'] = encodings_of_neighbours[:, 1]
-        knn_df['encoding_z_column'] = encodings_of_neighbours[:, 2]
-
-        knn_df['color_column'] = 0
-        knn_df['symbol_column'] = 0
-
-        return knn_df
-
-
-    def get_closest_indices(self, array, number):
-        return array[0: number]
-
-    def k_nearest_neighbours_indices(self, array, k):
-        return array[1:k + 1]
-
-    def update_point_color(self, chosen_point, value):
-        self.df.iloc[chosen_point, -1] = value
+        return closest[1: k+1]
 
 def main():
-    knn = KNN()
-    df = knn.compute_k_nearest_neighbours(69, 10)
+    dataset = SpotifyRecommenderDataset()
+    knn = KNN(dataset)
+    song_id = "0wwPcA6wtMf6HUMpIRdeP7"
+    song_df, knn_df = knn.knn_query(song_id, 42)
+    print(knn_df)
+    print(song_df)
     a = 10
 
 if __name__ == "__main__":

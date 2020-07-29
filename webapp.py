@@ -68,8 +68,8 @@ def update_graph(song_name, artists_string):
 
     df = knn.compute_k_nearest_neighbours(4269, 10)
 
-    fig = px.scatter_3d(df, x='encoding_x_column', y='encoding_y_column', z='encoding_z_column', hover_name="name",
-                        hover_data=df.columns, color='color_column', symbol='symbol_column')
+    fig = px.scatter_3d(df, x='encoding_x', y='encoding_y', z='encoding_z', hover_name="name",
+                        hover_data=df.columns, color='color', symbol='symbol')
 
     return fig
 
