@@ -13,7 +13,7 @@ from collections import namedtuple
 class SpotifyRecommenderDataset(Dataset):
     COLUMNS_TO_DROP = ['explicit', 'id', 'release_date', 'name', 'artists']
     NUMERIC_COLUMNS = ["acousticness", "danceability", "duration_ms", "energy", "instrumentalness", "key",
-                       "liveness", "loudness", "mode", "popularity", "speechiness", "tempo", "valence"]
+                       "liveness", "loudness", "mode", "popularity", "speechiness", "tempo", "valence", 'year']
     DISTINCT_ARTISTS_COUNT = 27621
     DISTINCT_GENRES_COUNT = 17492
     NUMERIC_FIELDS_COUNT = 14
