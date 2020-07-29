@@ -93,9 +93,10 @@ class SpotifyRecommenderDataset(Dataset):
 
     def _normalize_numeric_columns(self):
         for col in self.NUMERIC_COLUMNS:
-            max_value = self.df[col].max()
-            min_value = self.df[col].min()
-            self.df[col] = (self.df[col] - min_value) / (max_value - min_value)
+            mean = self.df[col].mean()
+            stddev = self.df[col].std()
+            self.df[col] = (self.df[col] - mean) / stddev * 100
+
 
     def __len__(self):
         return len(self.df.index)

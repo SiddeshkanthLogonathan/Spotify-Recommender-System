@@ -4,6 +4,8 @@ import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import time
+from visualization import DataVisualizer
+import pandas as pd
 
 
 default_model = Autoencoder()
@@ -27,19 +29,19 @@ def train(model=default_model, num_epochs=default_num_epochs, dataloader=default
         running_loss = 0.0
         prev = time.time()
         for index, batch in enumerate(dataloader):
-            train_data = batch.training_label
             if(index % 100 == 0):
                 print("patch learned! ", index, " of ", len(dataloader))
             optimizer.zero_grad()
             # train_data = pad_sequence(batch, batch_first=True).double()
             outputs = model(batch)
-            loss = criterion(outputs, train_data)
+            loss = criterion(outputs, batch.training_label)
             if(index % 100 == 0):
                 print("current loss: ", loss)
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
         scheduler.step()
+
         print("lr:", scheduler.get_last_lr())
         print(running_loss)
         loss = running_loss / len(dataloader)
@@ -49,12 +51,30 @@ def train(model=default_model, num_epochs=default_num_epochs, dataloader=default
         print('Epoch {} of {}, Train Loss: {:.3f}, Time spent: {}'.format(
             epoch + 1, num_epochs, loss, time.time()-prev))
 
-        print(train_loss)
-    return train_loss
+        #print(train_loss)
+    return train_loss, model
 
-plt.plot(train()[2:])
-plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.show()
+def main():
+    train_loss, model = train(num_epochs=2)
 
-torch.save(default_model, './model.pth')
+    dl = SpotifyRecommenderDataLoader(default_dataset, batch_size=1000)
+    batch = next(iter(dl))
+    with torch.no_grad():
+        encodings = model.encode(batch.training_label).numpy()
+
+    print(encodings)
+
+    df = pd.DataFrame.from_dict({'x': encodings[:, 0], 'y': encodings[:, 1], 'z': encodings[:, 2]})
+
+    import plotly.graph_objects as go
+
+    fig = go.Figure(data=[go.Scatter3d(
+        x=df['x'],
+        y=df['y'],
+        z=df['z'],
+    )])
+    fig.show()
+
+
+if __name__ == "__main__":
+    main()

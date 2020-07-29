@@ -10,13 +10,14 @@ from data_loading import SpotifyRecommenderDataset, SpotifyRecommenderDataLoader
 
 def init_weights(m):
     if type(m) == nn.Linear:
-        torch.nn.init.normal_(m.weight, std=0.01)
+        #torch.nn.init.normal_(m.weight, std=0.01)
+        torch.nn.init.xavier_normal(m.weight)
         m.bias.data.fill_(0.01)
 
 
 class Autoencoder(nn.Module):
-    ENCODING_LAYER_SIZES = [14, 10, 6, 3]
-    DECODING_LAYER_SIZES = [3, 6, 10, 14]
+    ENCODING_LAYER_SIZES = [14, 3]
+    DECODING_LAYER_SIZES = [3, 14]
     ENCODING_LAYER_COUNT = len(ENCODING_LAYER_SIZES)
     DECODING_LAYER_COUNT = len(DECODING_LAYER_SIZES)
 
@@ -29,20 +30,16 @@ class Autoencoder(nn.Module):
         # self.artist_embedder = nn.Embedding(SpotifyRecommenderDataset.DISTINCT_ARTISTS_COUNT, 3)
         # self.genre_embedder = nn.Embedding(SpotifyRecommenderDataset.DISTINCT_GENRES_COUNT, 3)
 
-        # encoding architecture
-        encoding_linear_layers = [nn.Linear(self.ENCODING_LAYER_SIZES[i], self.ENCODING_LAYER_SIZES[i + 1]) for i in
-                                  range(self.ENCODING_LAYER_COUNT - 1)]
-        encoding_activation_layers = [torch.nn.ReLU() for i in range(len(encoding_linear_layers))]
-
-        decoding_linear_layers = [nn.Linear(self.DECODING_LAYER_SIZES[i], self.DECODING_LAYER_SIZES[i + 1]) for i in
-                                  range(self.DECODING_LAYER_COUNT - 1)]
-        decoding_activation_layers = [torch.nn.ReLU() for i in range(len(encoding_linear_layers))]
-
-        encoding_layers = list(chain.from_iterable(zip(encoding_linear_layers, encoding_activation_layers)))
-        decoding_layers = list(chain.from_iterable(zip(decoding_linear_layers, decoding_activation_layers)))
-
-        self.encoding_module = nn.Sequential(*encoding_layers)
-        self.decoding_module = nn.Sequential(*decoding_layers)
+        self.encoding_module = nn.Sequential(
+            nn.Linear(14, 8),
+            nn.ReLU(),
+            nn.Linear(8, 3)
+        )
+        self.decoding_module = nn.Sequential(
+            nn.Linear(3, 8),
+            nn.ReLU(),
+            nn.Linear(8, 14)
+        )
 
     def _embed_artists_or_genres(self, artist_or_genres_lists: List[List[int]], embedder: nn.Embedding) -> torch.tensor:
         avg_embeddings = []
