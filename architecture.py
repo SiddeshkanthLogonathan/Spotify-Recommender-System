@@ -18,14 +18,19 @@ class Autoencoder(nn.Module):
         # self.genre_embedder = nn.Embedding(SpotifyRecommenderDataset.DISTINCT_GENRES_COUNT, 3)
 
         self.encoding_module = nn.Sequential(
-            nn.Linear(14, 8),
+            nn.Linear(14, 10),
             nn.ReLU(),
-            nn.Linear(8, 3)
+            nn.Linear(10, 6),
+            nn.ReLU(),
+            nn.Linear(6, 3)
         )
         self.decoding_module = nn.Sequential(
-            nn.Linear(3, 8),
             nn.ReLU(),
-            nn.Linear(8, 14)
+            nn.Linear(3, 6),
+            nn.ReLU(),
+            nn.Linear(6, 10),
+            nn.ReLU(),
+            nn.Linear(10, 14)
         )
 
     def init_weights(self, layer):
