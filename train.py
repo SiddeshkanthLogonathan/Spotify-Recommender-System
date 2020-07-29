@@ -15,7 +15,7 @@ default_criterion = nn.MSELoss()
 default_learning_rate = 0.01
 default_optimizer = torch.optim.Adam(params=default_model.parameters(), lr=0.01, betas=(0.9, 0.999), eps=1e-08, weight_decay=0,
                                      amsgrad=False)
-default_decay_rate = 0.5
+default_decay_rate = 1.0
 default_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=default_optimizer, gamma=default_decay_rate)
 
 

@@ -50,8 +50,8 @@ class KNN:
 
 
     def compute_k_nearest_neighbours(self, index_of_chosen_point):
-        points = np.transpose([self.df['dim1'].to_numpy(), self.df['dim2'].to_numpy(),
-                               self.df['dim3'].to_numpy()])  # df converted to array
+        points = np.transpose([self.df['enc1'].to_numpy(), self.df['enc2'].to_numpy(),
+                               self.df['enc3'].to_numpy()])  # df converted to array
         chosen_point = points[index_of_chosen_point]
 
         dist_array = []
@@ -78,11 +78,16 @@ class KNN:
 
 
 ## This will be replaced with our processed DataFrame ===
-df = pd.DataFrame()
-df['dim1'] = generate_dummy_values(1, 100)
-df['dim2'] = generate_dummy_values(5, 60)
-df['dim3'] = generate_dummy_values(10, 50)
-df['color'] = ['lightskyblue'] * 10000
+df = pd.read_csv('data/encodings.csv')
+#df['dim1'] = generate_dummy_values(1, 100)
+#df['dim2'] = generate_dummy_values(5, 60)
+#df['dim3'] = generate_dummy_values(10, 50)
+
+#df['dim1'] = df['enc1']
+#df['dim2'] = df['enc2']
+#df['dim3'] = df['enc3']
+
+#df['color'] = ['lightskyblue'] * 10000
 ## ======================================================
 
 data_v = DataVisualizer(df, K=10, index_of_chosen_point=6)
