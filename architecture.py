@@ -11,7 +11,7 @@ from data_loading import SpotifyRecommenderDataset, SpotifyRecommenderDataLoader
 def init_weights(m):
     if type(m) == nn.Linear:
         #torch.nn.init.normal_(m.weight, std=0.01)
-        torch.nn.init.xavier_normal(m.weight)
+        torch.nn.init.xavier_normal_(m.weight)
         m.bias.data.fill_(0.01)
 
 

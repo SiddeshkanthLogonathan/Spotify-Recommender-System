@@ -11,7 +11,6 @@ from collections import namedtuple
 
 
 class SpotifyRecommenderDataset(Dataset):
-    COLUMNS_TO_DROP = ['explicit', 'id', 'release_date', 'name', 'artists']
     NUMERIC_COLUMNS = ["acousticness", "danceability", "duration_ms", "energy", "instrumentalness", "key",
                        "liveness", "loudness", "mode", "popularity", "speechiness", "tempo", "valence", 'year']
     DISTINCT_ARTISTS_COUNT = 27621
@@ -22,7 +21,6 @@ class SpotifyRecommenderDataset(Dataset):
                  data_by_genres_path='data/data_by_genres.csv', pickle_path='data/dataset.pkl'):
         """Because the dataset is stored once it is created, only the first initialization takes long."""
 
-        # self.df_w_genres = pd.read_csv(data_w_genres_path)
         # self.df_by_genres = pd.read_csv(data_by_genres_path)
         # self._convert_string_column_to_list_type(self.df_w_genres, 'genres')
 
@@ -30,12 +28,16 @@ class SpotifyRecommenderDataset(Dataset):
             self.df = pd.read_pickle(pickle_path)
         else:
             self.df = pd.read_csv(data_path)
-            # self._convert_string_column_to_list_type(self.df, 'artists')
-            self._drop_unnecessary_columns()
-            # self.df['genres'] = self._genres_column()
+            self.df_w_genres = pd.read_csv(data_w_genres_path)
+            self._convert_string_column_to_list_type(self.df, 'artists')
+            self._convert_string_column_to_list_type(self.df_w_genres, 'genres')
+            self.df['genres'] = self._genres_column()
+            # self._convert_string_column_to_list_type(self.df, 'genres')
             # self._numerize_genres_and_artists_columns()
-            self._normalize_numeric_columns()
+            # self._normalize_numeric_columns()
             self.df.to_pickle(pickle_path)
+
+        self.numeric_fields_tensor = self._create_numeric_fields_tensor()
 
     def _genres_column(self) -> pd.Series:
         """All unique genres of a song. The genres of a song are the genres of all artists of the song."""
@@ -97,24 +99,37 @@ class SpotifyRecommenderDataset(Dataset):
             stddev = self.df[col].std()
             self.df[col] = (self.df[col] - mean) / stddev * 100
 
+    def _create_numeric_fields_tensor(self):
+        df = self.df[self.NUMERIC_COLUMNS]
+        tensor = torch.tensor(df.values).float()
+        normed = (tensor - torch.mean(tensor, 0, keepdim=True)) / torch.std(tensor, 0, keepdim=True)
+
+        return normed
 
     def __len__(self):
         return len(self.df.index)
 
-    def _normalize_genre_index(self, idx: int):
-        MIN_GENRE, MAX_GENRE = 0, 17491
-        return (idx - MIN_GENRE) / (MAX_GENRE - MIN_GENRE)
-
-    def _normalize_artist_index(self, idx: int):
-        MIN_ARTIST, MAX_ARTIST = 0, 27620
-        return (idx - MIN_ARTIST) / (MAX_ARTIST - MIN_ARTIST)
-
     # ReturnType = Tuple[Tuple[List, torch.tensor, List], torch.tensor]
     ReturnType = namedtuple('ReturnType', ['artists', 'numeric_fields', 'genres', 'training_label'])
 
+    def means_and_stddevs(self):
+        return pd.DataFrame.from_dict({'acousticness': {'mean': 0.49731333996592436, 'stddev': 0.7414460292277519},
+                                       'danceability': {'mean': 0.5422472298076697, 'stddev': 0.6620246753807381},
+                                       'duration_ms': {'mean': 231396.66697073847, 'stddev': 121328.43694803145},
+                                       'energy': {'mean': 0.49269268454059656, 'stddev': 0.6924105929679893},
+                                       'instrumentalness': {'mean': 0.16242483376250616, 'stddev': 0.31851769768554716},
+                                       'key': {'mean': 5.203600602650721, 'stddev': 3.5478173346586153},
+                                       'liveness': {'mean': 0.21080151704371575, 'stddev': 0.6644608742444775},
+                                       'loudness': {'mean': -11.369326520162904, 'stddev': 5.66863282734366},
+                                       'mode': {'mean': 0.7091033216412815, 'stddev': 0.4623579581374077},
+                                       'popularity': {'mean': 31.596506509098614, 'stddev': 22.45944013950889},
+                                       'speechiness': {'mean': 0.09454818145436569, 'stddev': 0.16828479657505896},
+                                       'tempo': {'mean': 116.95061491560536, 'stddev': 30.728968654447534},
+                                       'valence': {'mean': 0.5320732217160243, 'stddev': 0.2624244490834021},
+                                       'year': {'mean': 1977.141775936345, 'stddev': 28.566289822240513}})
+
     def __getitem__(self, idx: Union[int, slice, list]) -> ReturnType:
-        numeric_fields = self.df.loc[idx, self.df.columns.difference(['artists', 'genres'])]
-        numeric_fields_tensor = torch.tensor(numeric_fields.values.astype('float32')).squeeze()
+        numeric_fields_tensor = self.numeric_fields_tensor[idx]
 
         # artists = list(self.df.loc[idx, 'artists'])
         # genres = list(self.df.loc[idx, 'genres'])
@@ -132,8 +147,8 @@ class SpotifyRecommenderDataset(Dataset):
         # return self.ReturnType(artists=artists, numeric_fields=numeric_fields_tensor, genres=genres,
         #                        training_label=training_label_tensor)
 
-        return self.ReturnType(artists=None, numeric_fields=None, genres=None,
-                               training_label=numeric_fields_tensor)
+
+        return self.ReturnType(artists=None, numeric_fields=None, genres=None, training_label=numeric_fields_tensor)
 
 
 def SpotifyRecommenderDataLoader(*args, **kwargs):

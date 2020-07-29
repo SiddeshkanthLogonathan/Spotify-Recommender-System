@@ -12,7 +12,7 @@ default_model = Autoencoder()
 default_num_epochs = 2
 default_dataset = SpotifyRecommenderDataset()
 default_batch_size = 256
-default_dataloader = SpotifyRecommenderDataLoader(default_dataset, batch_size=default_batch_size, shuffle=True)
+default_dataloader = SpotifyRecommenderDataLoader(default_dataset, batch_size=default_batch_size)
 default_criterion = nn.MSELoss()
 default_learning_rate = 0.01
 default_optimizer = torch.optim.Adam(params=default_model.parameters(), lr=0.01, betas=(0.9, 0.999), eps=1e-08, weight_decay=0,
@@ -29,7 +29,7 @@ def train(model=default_model, num_epochs=default_num_epochs, dataloader=default
         running_loss = 0.0
         prev = time.time()
         for index, batch in enumerate(dataloader):
-            if(index % 100 == 0):
+            if index % 200 == 0:
                 print("patch learned! ", index, " of ", len(dataloader))
             optimizer.zero_grad()
             # train_data = pad_sequence(batch, batch_first=True).double()
