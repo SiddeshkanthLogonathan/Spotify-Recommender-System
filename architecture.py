@@ -7,24 +7,11 @@ from itertools import chain
 from typing import List
 from data_loading import SpotifyRecommenderDataset, SpotifyRecommenderDataLoader
 
-
-def init_weights(m):
-    if type(m) == nn.Linear:
-        #torch.nn.init.normal_(m.weight, std=0.01)
-        torch.nn.init.xavier_normal_(m.weight)
-        m.bias.data.fill_(0.01)
-
-
 class Autoencoder(nn.Module):
-    ENCODING_LAYER_SIZES = [14, 3]
-    DECODING_LAYER_SIZES = [3, 14]
-    ENCODING_LAYER_COUNT = len(ENCODING_LAYER_SIZES)
-    DECODING_LAYER_COUNT = len(DECODING_LAYER_SIZES)
-
     def __init__(self):
         super(Autoencoder, self).__init__()
         self.buildArchitecture()
-        self.apply(init_weights)
+        self.apply(self.init_weights)
 
     def buildArchitecture(self):
         # self.artist_embedder = nn.Embedding(SpotifyRecommenderDataset.DISTINCT_ARTISTS_COUNT, 3)
@@ -40,6 +27,11 @@ class Autoencoder(nn.Module):
             nn.ReLU(),
             nn.Linear(8, 14)
         )
+
+    def init_weights(self, layer):
+        if type(layer) == nn.Linear:
+            torch.nn.init.xavier_normal_(layer.weight)
+            layer.bias.data.fill_(0.01)
 
     def _embed_artists_or_genres(self, artist_or_genres_lists: List[List[int]], embedder: nn.Embedding) -> torch.tensor:
         avg_embeddings = []

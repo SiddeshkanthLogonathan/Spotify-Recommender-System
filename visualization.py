@@ -3,15 +3,8 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 import torch
-from model_testing import get_encodings
 from data_loading import SpotifyRecommenderDataset
 
-## This is used to simulate our 3d Dataset that we will use to visualize. It is unnecessary once we have our data
-def generate_dummy_values(low, high):
-    coordinates = []
-    for i in range(10000):
-        coordinates.append(random.randint(low, high))
-    return coordinates
 
 class DataVisualizer:
 
@@ -40,7 +33,6 @@ class DataVisualizer:
 
     def get_recommended_songs(self):
         return self.df.iloc[self.knn.neighbours_indices] # returns the dataset containing the recommended songs
-
 
 class KNN:
     COLOR_OF_CHOSEN_POINT = 'red'
@@ -75,15 +67,3 @@ class KNN:
         closest = np.argsort(dist_array)  # Sort it based on closest to furthest for each point
 
         return closest[1: k+1]
-
-def main():
-    dataset = SpotifyRecommenderDataset()
-    knn = KNN(dataset)
-    song_id = "0wwPcA6wtMf6HUMpIRdeP7"
-    song_df, knn_df = knn.knn_query(song_id, 42)
-    print(knn_df)
-    print(song_df)
-    a = 10
-
-if __name__ == "__main__":
-    main()
