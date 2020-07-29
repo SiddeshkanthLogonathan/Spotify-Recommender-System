@@ -44,14 +44,14 @@ def test_and_save_encodings_to_csv():
         csvWriter = csv.writer(file,delimiter=',')
         csvWriter.writerows(encodings)
 
-def get_encodings(model: Autoencoder) -> torch.tensor:
+def get_encodings() -> torch.tensor:
+    model = torch.load('./model.pth')
     dataset = SpotifyRecommenderDataset()
     batch = dataset[0:len(dataset)]
     return model.encode(batch.training_label)
 
 def main():
-    model = torch.load('./model.pth')
-    encodings = get_encodings(model)
+    encodings = get_encodings()
 
 if __name__ == "__main__":
     main()

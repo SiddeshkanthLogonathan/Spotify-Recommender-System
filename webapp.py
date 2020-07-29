@@ -13,11 +13,12 @@ import pandas as pd
 import torch
 import numpy as np
 import datetime
+from visualization import KNN
 
 raw_dataset = pd.read_csv('data/data.csv')
 raw_dataset = raw_dataset[['name', 'artists', 'release_date', 'duration_ms', 'popularity']]
 
-
+knn = KNN()
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -65,24 +66,8 @@ def update_graph(song_name, artists_string):
     print(song_name)
     print(artists_string)
 
-    df = pd.read_csv('data/data.csv')
-    df = df.head(100)
+    df = knn.compute_k_nearest_neighbours(4269, 10)
 
-    encoding_x_column = np.random.randint(0, 100, 100)
-    encoding_y_column = np.random.randint(0, 100, 100)
-    encoding_z_column = np.random.randint(0, 100, 100)
-
-    df['encoding_x_column'] = encoding_x_column
-    df['encoding_y_column'] = encoding_y_column
-    df['encoding_z_column'] = encoding_z_column
-    # df['color_column'] = ['lightskyblue'] * 42 + ['red'] * 11 + ['mediumpurple'] * 47
-    df['color_column'] = list(range(80, 100)) + [0] * 80
-    df['symbol_column'] = [0] + (len(df) - 1) * [1]
-
-    data_point = df[(df.name == song_name) & (df.artists == artists_string)]
-    print(data_point)
-
-    # df = px.data.iris()
     fig = px.scatter_3d(df, x='encoding_x_column', y='encoding_y_column', z='encoding_z_column', hover_name="name",
                         hover_data=df.columns, color='color_column', symbol='symbol_column')
 

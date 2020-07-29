@@ -2,6 +2,8 @@ import random
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
+import torch
+from model_testing import get_encodings
 
 ## This is used to simulate our 3d Dataset that we will use to visualize. It is unnecessary once we have our data
 def generate_dummy_values(low, high):
@@ -43,29 +45,40 @@ class KNN:
     COLOR_OF_CHOSEN_POINT = 'red'
     COLOR_OF_K_NEIGHBOURS = 'mediumpurple'
 
-    def __init__(self, dataframe, K):
-        self.df = dataframe
-        self.K = K
-        self.neighbours_indices = []
+    def __init__(self):
+        with torch.no_grad():
+            self.points = get_encodings().numpy()
+
+        self.df = pd.read_csv('data/data.csv')
 
 
-    def compute_k_nearest_neighbours(self, index_of_chosen_point):
-        points = np.transpose([self.df['enc1'].to_numpy(), self.df['enc2'].to_numpy(),
-                               self.df['enc3'].to_numpy()])  # df converted to array
-        chosen_point = points[index_of_chosen_point]
+    def compute_k_nearest_neighbours(self, index_of_chosen_point, k):
+        chosen_point = self.points[index_of_chosen_point]
 
         dist_array = []
-        for x in points:
-            dist = np.linalg.norm(chosen_point - x) # computes the Eucledian distance between chosen point and x
+        for point in self.points:
+            dist = np.linalg.norm(chosen_point - point) # computes the Euclidean distance between chosen point and x
             dist_array.append(dist)
 
         closest = np.argsort(dist_array)  # Sort it based on closest to furthest for each point
-        self.neighbours_indices = self.k_nearest_neighbours_indices(closest, self.K)  # indexes of k nearest neighbours
+        neighbours_indices = self.k_nearest_neighbours_indices(closest, k)  # indexes of k nearest neighbours
 
-        self.update_point_color(index_of_chosen_point, self.COLOR_OF_CHOSEN_POINT)
-        self.update_point_color(self.neighbours_indices, self.COLOR_OF_K_NEIGHBOURS)
+        #self.update_point_color(index_of_chosen_point, self.COLOR_OF_CHOSEN_POINT)
+        #self.update_point_color(self.neighbours_indices, self.COLOR_OF_K_NEIGHBOURS)
 
-        return self.get_closest_indices(closest, 3000)
+        indices = [index_of_chosen_point] + neighbours_indices
+        knn_df = self.df.loc[indices]
+        encodings_of_neighbours = self.points[indices]
+
+        knn_df['encoding_x_column'] = encodings_of_neighbours[:, 0]
+        knn_df['encoding_y_column'] = encodings_of_neighbours[:, 1]
+        knn_df['encoding_z_column'] = encodings_of_neighbours[:, 2]
+
+        knn_df['color_column'] = 0
+        knn_df['symbol_column'] = 0
+
+        return knn_df
+
 
     def get_closest_indices(self, array, number):
         return array[0: number]
@@ -76,20 +89,10 @@ class KNN:
     def update_point_color(self, chosen_point, value):
         self.df.iloc[chosen_point, -1] = value
 
+def main():
+    knn = KNN()
+    df = knn.compute_k_nearest_neighbours(69, 10)
+    a = 10
 
-## This will be replaced with our processed DataFrame ===
-df = pd.read_csv('data/encodings.csv')
-#df['dim1'] = generate_dummy_values(1, 100)
-#df['dim2'] = generate_dummy_values(5, 60)
-#df['dim3'] = generate_dummy_values(10, 50)
-
-#df['dim1'] = df['enc1']
-#df['dim2'] = df['enc2']
-#df['dim3'] = df['enc3']
-
-#df['color'] = ['lightskyblue'] * 10000
-## ======================================================
-
-data_v = DataVisualizer(df, K=10, index_of_chosen_point=6)
-data_v.visualize()
-# print(data_v.get_recommended_songs())
+if __name__ == "__main__":
+    main()
