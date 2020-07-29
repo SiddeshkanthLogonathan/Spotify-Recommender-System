@@ -14,9 +14,17 @@ import torch
 import numpy as np
 import datetime
 from visualization import KNN
+from data_loading import SpotifyRecommenderDataset
 
-raw_dataset = pd.read_csv('data/data.csv')
-raw_dataset = raw_dataset[['name', 'artists', 'release_date', 'duration_ms', 'popularity']]
+dataset = SpotifyRecommenderDataset()
+dataset_df = dataset.df
+
+dataset_df['duration (minutes)'] = dataset_df['duration_ms'] / 60000
+new_artist_column = [", ".join(artist_list) for artist_list in dataset_df['artists']]
+dataset_df['artists'] = new_artist_column
+new_genres_column = [", ".join(gemre_list) for gemre_list in dataset_df['genres']]
+dataset_df['genres'] = new_genres_column
+dataset_df = dataset_df[['id', 'name', 'artists', 'genres', 'duration (minutes)']]
 
 knn = KNN()
 
@@ -27,20 +35,17 @@ app.layout = html.Div([
 
     html.H1("Spotify Recommender Webapp", style={'text-align': 'center'}),
 
-    html.H3("Enter a song name"),
-    dcc.Input(id='song_name_input', value="Fantasiestücke, Op. 111: Più tosto lento"),
-    html.H3("Enter list of artists"),
-    dcc.Input(id='artists_input', value="['Robert Schumann', 'Vladimir Horowitz']"),
+    html.H3("Enter a song id"),
+    dcc.Input(id='song_id_input', value="7GhIk7Il098yCjg4BQjzvb"),
     html.Br(),
 
     dcc.Graph(id='3d_scatter_plot', figure={}),
 
     dash_table.DataTable(
         columns=[{'name': column_name,
-                  'id': column_name,
-                  'type': ('text' if column_name in ['name', 'artists'] else 'numeric')}
-                 for column_name in raw_dataset.columns],
-        data=raw_dataset.to_dict('records'),
+                  'id': column_name}
+                 for column_name in dataset_df],
+        data=dataset_df.to_dict('records'),
         filter_action='native',
         style_table={
             'height': 400,
@@ -52,24 +57,19 @@ app.layout = html.Div([
         }
     )
 ])
-
-
-# ------------------------------------------------------------------------------
-# Connect the Plotly graphs with Dash Components
 @app.callback(
     # [Output(component_id='output_container', component_property='children'),
     Output(component_id='3d_scatter_plot', component_property='figure'),
-    [Input(component_id='song_name_input', component_property='value'),
-     Input(component_id='artists_input', component_property='value')]
+    [Input(component_id='song_id_input', component_property='value')]
 )
-def update_graph(song_name, artists_string):
-    print(song_name)
-    print(artists_string)
+def update_graph(song_id):
 
-    df = knn.compute_k_nearest_neighbours(4269, 10)
+    chosen_song_df, knn_df = knn.knn_query(song_id)
 
-    fig = px.scatter_3d(df, x='encoding_x', y='encoding_y', z='encoding_z', hover_name="name",
-                        hover_data=df.columns, color='color', symbol='symbol')
+
+
+    fig = px.scatter_3d(knn_df, x='encoding_x', y='encoding_y', z='encoding_z', hover_name="name",
+                        hover_data=knn_df.columns, color='color', symbol='symbol')
 
     return fig
 

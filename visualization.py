@@ -18,7 +18,7 @@ class DataVisualizer:
     def __init__(self, dataframe, K, index_of_chosen_point):
         self.df = dataframe
         self.knn = KNN(dataframe=self.df, K=K)
-        self.indices_to_plot = self.knn.compute_k_nearest_neighbours(index_of_chosen_point=index_of_chosen_point)
+        self.indices_to_plot = self.knn._compute_k_nearest_neighbours(index_of_chosen_point=index_of_chosen_point)
 
 
 
@@ -46,14 +46,14 @@ class KNN:
     COLOR_OF_CHOSEN_POINT = 'red'
     COLOR_OF_K_NEIGHBOURS = 'mediumpurple'
 
-    def __init__(self, dataset: SpotifyRecommenderDataset()):
-        self.dataset = dataset
-        self.points = dataset.df[['encoding_x', 'encoding_y', 'encoding_z']].values
+    def __init__(self):
+        self.dataset = SpotifyRecommenderDataset()
+        self.points = self.dataset.df[['encoding_x', 'encoding_y', 'encoding_z']].values
 
-    def knn_query(self, song_id: str, k: int):
+    def knn_query(self, song_id: str, k: int = 20):
         boolean_index = self.dataset.df['id'] == song_id
         index_of_chosen_point = self.dataset.df.index[boolean_index].item()
-        knn_indices = self.compute_k_nearest_neighbours(index_of_chosen_point, k)
+        knn_indices = self._compute_k_nearest_neighbours(index_of_chosen_point, k)
 
         chosen_song_df = self.dataset.df.iloc[index_of_chosen_point, :]
         chosen_song_df['color'] = 1
@@ -64,7 +64,7 @@ class KNN:
 
         return chosen_song_df, knn_df
 
-    def compute_k_nearest_neighbours(self, index_of_chosen_point, k):
+    def _compute_k_nearest_neighbours(self, index_of_chosen_point, k):
         chosen_point = self.points[index_of_chosen_point]
 
         dist_array = []
