@@ -23,12 +23,13 @@ class WebApp:
         self.dataset = SpotifyRecommenderDataset()
         self.dataset_df = self.dataset.df
 
-        self.dataset_df['duration (minutes)'] = self.dataset_df['duration_ms'] / 60000
+        #self.dataset_df['duration (minutes)'] = self.dataset_df['duration_ms'] / 60000
         new_artist_column = [", ".join(artist_list) for artist_list in self.dataset_df['artists']]
         self.dataset_df['artists'] = new_artist_column
         new_genres_column = [", ".join(genre_list) for genre_list in self.dataset_df['genres']]
         self.dataset_df['genres'] = new_genres_column
-        self.dataset_df = self.dataset_df[['id', 'name', 'artists', 'genres', 'duration (minutes)']]
+        #self.dataset_df = self.dataset_df[['id', 'name', 'artists', 'genres', 'duration (minutes)']]
+        self.dataset_df = self.dataset_df[['id', 'name', 'artists', 'genres']]
 
         self.knn = KNN()
 
@@ -39,11 +40,24 @@ class WebApp:
         self.app.layout = html.Div([
             html.H1("Spotify Recommender Webapp", style={'text-align': 'center'}),
 
-            html.H3("Enter a song id"),
-            dcc.Input(id='song_id_input', value="7GhIk7Il098yCjg4BQjzvb"),
-            html.Br(),
+            html.Div([
+                html.Div([
+                    html.H3("Enter a song id"),
+                    dcc.Input(id='song_id_input', value="7GhIk7Il098yCjg4BQjzvb"),
+                    html.Br()
+                ], style={'display': 'inline-block', 'marginRight': '1.5em'}),
 
-            dcc.Graph(id='3d_scatter_plot', figure={}),
+                html.Div([
+                    html.H3("How many recommendations"),
+                    dcc.Input(id='value_for_k', value="20"),
+                    html.Br()
+                ], style={'display': 'inline-block'})]
+            ),
+
+            dcc.Graph(id='3d_scatter_plot', figure={},
+                      style={
+                        'height': '600px'
+            }),
 
             dash_table.DataTable(
                 columns=[{'name': column_name,
@@ -61,20 +75,20 @@ class WebApp:
                 }
             )
         ])
+
         @self.app.callback(
             # [Output(component_id='output_container', component_property='children'),
             Output(component_id='3d_scatter_plot', component_property='figure'),
-            [Input(component_id='song_id_input', component_property='value')]
+            [Input(component_id='song_id_input', component_property='value'), Input(component_id='value_for_k', component_property='value')]
         )
-        def update_graph(song_id):
-            chosen_song_df, knn_df = self.knn.knn_query(song_id)
+        def update_graph(song_id, k):
+            chosen_song_df, knn_df = self.knn.knn_query(song_id, int(k))
 
-            chosen_song_and_knn_df = pd.concat([pd.DataFrame(chosen_song_df).transpose(), knn_df])
-            print(pd.DataFrame(chosen_song_df).transpose())
-            print(knn_df)
+            chosen_song_and_knn_df = pd.concat([knn_df, pd.DataFrame(chosen_song_df).transpose()])
 
             fig = px.scatter_3d(chosen_song_and_knn_df, x='encoding_x', y='encoding_y', z='encoding_z', hover_name='name',
                                 hover_data=chosen_song_and_knn_df.columns, color='color', symbol='symbol')
+            fig.update_layout(showlegend=False)
 
             return fig
 

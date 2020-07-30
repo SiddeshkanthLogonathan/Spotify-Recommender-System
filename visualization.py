@@ -38,6 +38,7 @@ class GeneralPurposeVisualizer:
     def get_recommended_songs(self):
         return self.df.iloc[self.knn.neighbours_indices] # returns the dataset containing the recommended songs
 
+
 class KNN:
     COLOR_OF_CHOSEN_POINT = 'red'
     COLOR_OF_K_NEIGHBOURS = 'mediumpurple'
@@ -53,10 +54,10 @@ class KNN:
 
         chosen_song_df = self.dataset.df.iloc[index_of_chosen_point, :]
         chosen_song_df['color'] = self.COLOR_OF_CHOSEN_POINT
-        chosen_song_df['symbol'] = 1
+        chosen_song_df['symbol'] = 0
         knn_df = self.dataset.df.iloc[knn_indices, :]
         knn_df['color'] = self.COLOR_OF_K_NEIGHBOURS
-        knn_df['symbol'] = 0
+        knn_df['symbol'] = 1
 
         return chosen_song_df, knn_df
 
