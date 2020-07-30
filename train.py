@@ -26,6 +26,7 @@ def train(model: Autoencoder, dataloader: torch.utils.data.DataLoader, num_epoch
             optimizer.step()
             epoch_loss += loss.item()
 
+        epoch_loss = epoch_loss / len(dataloader)
         scheduler.step()
         if verbose:
             print(f"Loss of epoch {epoch}: {epoch_loss}")

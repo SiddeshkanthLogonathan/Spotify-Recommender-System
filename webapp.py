@@ -69,8 +69,12 @@ class WebApp:
         def update_graph(song_id):
             chosen_song_df, knn_df = self.knn.knn_query(song_id)
 
-            fig = px.scatter_3d(knn_df, x='encoding_x', y='encoding_y', z='encoding_z', hover_name="name",
-                                hover_data=knn_df.columns, color='color', symbol='symbol')
+            chosen_song_and_knn_df = pd.concat([pd.DataFrame(chosen_song_df).transpose(), knn_df])
+            print(pd.DataFrame(chosen_song_df).transpose())
+            print(knn_df)
+
+            fig = px.scatter_3d(chosen_song_and_knn_df, x='encoding_x', y='encoding_y', z='encoding_z', hover_name='name',
+                                hover_data=chosen_song_and_knn_df.columns, color='color', symbol='symbol')
 
             return fig
 

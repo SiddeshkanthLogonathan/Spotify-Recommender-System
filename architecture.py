@@ -19,17 +19,17 @@ class Autoencoder(nn.Module):
 
         self.encoding_module = nn.Sequential(
             nn.Linear(14, 10),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(10, 6),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(6, 3)
         )
         self.decoding_module = nn.Sequential(
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(3, 6),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(6, 10),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(10, 14)
         )
 
