@@ -7,11 +7,17 @@ from itertools import chain
 from typing import List
 from data_loading import SpotifyRecommenderDataset, SpotifyRecommenderDataLoader
 
+
+def init_weights(layer):
+    if type(layer) == nn.Linear:
+        torch.nn.init.xavier_normal_(layer.weight)
+        layer.bias.data.fill_(0.01)
+
 class Autoencoder(nn.Module):
     def __init__(self):
         super(Autoencoder, self).__init__()
         self.buildArchitecture()
-        self.apply(self.init_weights)
+        self.apply(init_weights)
 
     def buildArchitecture(self):
         # self.artist_embedder = nn.Embedding(SpotifyRecommenderDataset.DISTINCT_ARTISTS_COUNT, 3)
@@ -32,11 +38,6 @@ class Autoencoder(nn.Module):
             nn.Tanh(),
             nn.Linear(10, 14)
         )
-
-    def init_weights(self, layer):
-        if type(layer) == nn.Linear:
-            torch.nn.init.xavier_normal_(layer.weight)
-            layer.bias.data.fill_(0.01)
 
     def _embed_artists_or_genres(self, artist_or_genres_lists: List[List[int]], embedder: nn.Embedding) -> torch.tensor:
         avg_embeddings = []
@@ -68,3 +69,29 @@ class Autoencoder(nn.Module):
 
     def decode(self, x: torch.tensor):
         return self.decoding_module(x)
+
+class GenreEmbedder(nn.Module):
+    EMBEDDING_DIM = 3
+
+    def __init__(self):
+        super(GenreEmbedder, self).__init__()
+        self.buildArchitecture()
+        self.apply(init_weights)
+
+    def buildArchitecture(self):
+        self.embed = torch.nn.Embedding(SpotifyRecommenderDataset.DISTINCT_GENRES_COUNT, self.EMBEDDING_DIM)
+        self.fully_connected = nn.Sequential(
+            torch.nn.Linear(3, 20),
+            torch.nn.Sigmoid(),
+            torch.nn.Linear(20, 80),
+            torch.nn.Sigmoid(),
+            torch.nn.Linear(80, 768),
+            torch.nn.Linear(768, SpotifyRecommenderDataset.DISTINCT_GENRES_COUNT),
+            torch.nn.Softmax(dim=1)
+        )
+
+    def forward(self, input: torch.tensor):
+        embeddings = self.embed(input)
+        result = self.fully_connected(embeddings)
+        a = 10
+        return result

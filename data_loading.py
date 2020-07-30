@@ -15,7 +15,7 @@ class SpotifyRecommenderDataset(Dataset):
     NUMERIC_COLUMNS = ["acousticness", "danceability", "duration_ms", "energy", "instrumentalness", "key",
                        "liveness", "loudness", "mode", "popularity", "speechiness", "tempo", "valence", 'year']
     DISTINCT_ARTISTS_COUNT = 27621
-    DISTINCT_GENRES_COUNT = 17492
+    DISTINCT_GENRES_COUNT = 2664
     NUMERIC_FIELDS_COUNT = 14
 
     def __init__(self, data_path='data/data.csv', data_w_genres_path='data/data_w_genres.csv',
@@ -157,7 +157,7 @@ def SpotifyRecommenderDataLoader(*args, **kwargs):
     return torch.utils.data.DataLoader(*args, **kwargs, collate_fn=custom_collate_fn)
 
 
-class GenreEmbeddingsDataset:
+class GenreOccurenceDataset:
     tensor_path = "data/genres_occurence_distributions.pt"
     def __init__(self):
         self.distinct_genres = list(pd.read_csv('data/data_by_genres.csv')['genres'])
@@ -196,19 +196,11 @@ class GenreEmbeddingsDataset:
                                                                                     dim=1, keepdim=True)
         return probability_distributions
 
-    def __getitem__(self, genre: str):
-            idx = self.distinct_genres.index(genre)
-            return self.probability_distributions[idx]
+    def __len__(self):
+        return len(self.distinct_genres)
 
+    def __getitem__(self, idx: Union[int, str]):
+        if isinstance(idx, str):
+            idx = self.distinct_genres.index(idx)
 
-def main():
-    genre_embeddings_dataset = GenreEmbeddingsDataset()
-    sample_distribution = genre_embeddings_dataset['adventista'].numpy()
-    idx = int(np.nonzero(sample_distribution)[0])
-    print(idx)
-    print(genre_embeddings_dataset.distinct_genres[idx])
-
-
-
-if __name__ == "__main__":
-    main()
+        return (idx, self.probability_distributions[idx])
