@@ -52,11 +52,9 @@ class KNN:
         knn_indices = self._compute_k_nearest_neighbours(index_of_chosen_point, k)
 
         chosen_song_df = self.dataset.df.iloc[index_of_chosen_point, :]
-        chosen_song_df['color'] = self.COLOR_OF_CHOSEN_POINT
-        chosen_song_df['symbol'] = 0
+        chosen_song_df['type'] = 'input song'
         knn_df = self.dataset.df.iloc[knn_indices, :]
-        knn_df['color'] = self.COLOR_OF_K_NEIGHBOURS
-        knn_df['symbol'] = 1
+        knn_df['type'] = 'recommended song'
 
         return chosen_song_df, knn_df
 
