@@ -1,19 +1,23 @@
 import random
 import plotly.graph_objects as go
+import plotly.express as px
 import pandas as pd
 import numpy as np
 import torch
 from data_loading import SpotifyRecommenderDataset
 
 
-class DataVisualizer:
+class GeneralPurposeVisualizer:
+    @staticmethod
+    def visualize_encodings(encodings: torch.tensor):
+        df = pd.DataFrame({'x': encodings[:, 0], 'y': encodings[:, 1], 'z': encodings[:, 2]})
+        fig = px.scatter_3d(df, x='x', y='y', z='z')
+        fig.show()
 
     def __init__(self, dataframe, K, index_of_chosen_point):
         self.df = dataframe
         self.knn = KNN(dataframe=self.df, K=K)
         self.indices_to_plot = self.knn._compute_k_nearest_neighbours(index_of_chosen_point=index_of_chosen_point)
-
-
 
     def visualize(self):
         cols = self.df.columns
@@ -48,10 +52,10 @@ class KNN:
         knn_indices = self._compute_k_nearest_neighbours(index_of_chosen_point, k)
 
         chosen_song_df = self.dataset.df.iloc[index_of_chosen_point, :]
-        chosen_song_df['color'] = 1
+        chosen_song_df['color'] = self.COLOR_OF_CHOSEN_POINT
         chosen_song_df['symbol'] = 1
         knn_df = self.dataset.df.iloc[knn_indices, :]
-        knn_df['color'] = 0
+        knn_df['color'] = self.COLOR_OF_K_NEIGHBOURS
         knn_df['symbol'] = 0
 
         return chosen_song_df, knn_df

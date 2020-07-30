@@ -139,7 +139,6 @@ class SpotifyRecommenderDataset(Dataset):
         # return self.ReturnType(artists=artists, numeric_fields=numeric_fields_tensor, genres=genres,
         #                        training_label=training_label_tensor)
 
-
         return self.ReturnType(artists=None, numeric_fields=None, genres=None, training_label=numeric_fields_tensor)
 
 
@@ -156,3 +155,38 @@ def SpotifyRecommenderDataLoader(*args, **kwargs):
                                                     genres=None, training_label=all_training_labels)
 
     return torch.utils.data.DataLoader(*args, **kwargs, collate_fn=custom_collate_fn)
+
+
+class GenreEmbeddingsDataset:
+    def __init__(self):
+        self.dataset = SpotifyRecommenderDataset()
+        self.distinct_genres = list(pd.read_csv('data/data_by_genres.csv')['genres'])
+        self.genre_count = len(self.distinct_genres)
+        self.original_genre_column = self.dataset.df['genres']
+        self.song_count = len(self.original_genre_column)
+        a = 10
+
+    def _create_numerized_genres_column(self):
+        self.numerized_genre_column = []
+        for i in tqdm(range(self.song_count), desc="Numerizing genres"):
+            string_genres = self.original_genre_column.iloc[i]
+            numerized_genres = [self.distinct_genres.index(string_genre) for string_genre in string_genres]
+            self.numerized_genre_column.append(numerized_genres)
+
+    def _create_probability_distributions(self):
+        probability_distributions = []
+        for i in range(self.genre_count):
+            probability_distribution = torch.zeros(self.genre_count)
+            ocurrences_of_genre = [genre_list for genre_list in self.numerized_genre_column if i in genre_list]
+            ocurrences_of_genre = list(chain.from_iterable(ocurrences_of_genre))
+            for occurence in ocurrences_of_genre:
+                if occurence != i:
+                    probability_distribution[occurence] += 1
+
+
+def main():
+    genre_embeddings_dataset = GenreEmbeddingsDataset()
+
+
+if __name__ == "__main__":
+    main()
