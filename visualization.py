@@ -38,6 +38,7 @@ class GeneralPurposeVisualizer:
     def get_recommended_songs(self):
         return self.df.iloc[self.knn.neighbours_indices] # returns the dataset containing the recommended songs
 
+
 class KNN:
     COLOR_OF_CHOSEN_POINT = 'red'
     COLOR_OF_K_NEIGHBOURS = 'mediumpurple'
