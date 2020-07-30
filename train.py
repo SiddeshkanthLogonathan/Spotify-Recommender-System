@@ -5,15 +5,16 @@ import torch
 default_num_epochs = 10
 default_criterion = torch.nn.MSELoss()
 default_learning_rate = 0.01
-default_decay_rate = 1.0
+#default_decay_rate = 0.9
 
 def train(model: Autoencoder, dataloader: torch.utils.data.DataLoader, num_epochs=default_num_epochs,
           criterion=default_criterion, verbose=True):
 
-    optimizer = torch.optim.Adam(params=model.parameters(), lr=0.01, betas=(0.9, 0.999), eps=1e-08, weight_decay=0,
-                     amsgrad=False)
+    #optimizer = torch.optim.Adam(params=model.parameters(), lr=0.01, betas=(0.9, 0.999), eps=1e-08, weight_decay=0,
+    #                 amsgrad=False)
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=0.01)
 
-    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=default_decay_rate)
+    #scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=default_decay_rate)
 
     for epoch in range(num_epochs):
         epoch_loss = 0.0
@@ -27,7 +28,7 @@ def train(model: Autoencoder, dataloader: torch.utils.data.DataLoader, num_epoch
             epoch_loss += loss.item()
 
         epoch_loss = epoch_loss / len(dataloader)
-        scheduler.step()
+        #scheduler.step()
         if verbose:
             print(f"Loss of epoch {epoch}: {epoch_loss}")
 

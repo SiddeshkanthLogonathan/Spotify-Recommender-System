@@ -43,7 +43,10 @@ class WebApp:
             dcc.Input(id='song_id_input', value="7GhIk7Il098yCjg4BQjzvb"),
             html.Br(),
 
-            dcc.Graph(id='3d_scatter_plot', figure={}),
+            dcc.Graph(id='3d_scatter_plot', figure={},
+                      style={
+                        'height': '600px'
+            }),
 
             dash_table.DataTable(
                 columns=[{'name': column_name,
@@ -69,12 +72,11 @@ class WebApp:
         def update_graph(song_id):
             chosen_song_df, knn_df = self.knn.knn_query(song_id)
 
-            chosen_song_and_knn_df = pd.concat([pd.DataFrame(chosen_song_df).transpose(), knn_df])
-            print(pd.DataFrame(chosen_song_df).transpose())
-            print(knn_df)
+            chosen_song_and_knn_df = pd.concat([knn_df, pd.DataFrame(chosen_song_df).transpose()])
 
             fig = px.scatter_3d(chosen_song_and_knn_df, x='encoding_x', y='encoding_y', z='encoding_z', hover_name='name',
                                 hover_data=chosen_song_and_knn_df.columns, color='color', symbol='symbol')
+            fig.update_layout(showlegend=False)
 
             return fig
 
