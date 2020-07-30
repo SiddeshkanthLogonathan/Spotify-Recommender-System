@@ -158,34 +158,56 @@ def SpotifyRecommenderDataLoader(*args, **kwargs):
 
 
 class GenreEmbeddingsDataset:
+    tensor_path = "data/genres_occurence_distributions.pt"
     def __init__(self):
-        self.dataset = SpotifyRecommenderDataset()
         self.distinct_genres = list(pd.read_csv('data/data_by_genres.csv')['genres'])
-        self.genre_count = len(self.distinct_genres)
-        self.original_genre_column = self.dataset.df['genres']
-        self.song_count = len(self.original_genre_column)
-        a = 10
+        if os.path.exists(self.tensor_path):
+            self.probability_distributions = torch.load(self.tensor_path)
+        else:
+            self.probability_distributions = self._create_probability_distributions()
+            torch.save(self.probability_distributions, self.tensor_path)
 
     def _create_numerized_genres_column(self):
-        self.numerized_genre_column = []
-        for i in tqdm(range(self.song_count), desc="Numerizing genres"):
-            string_genres = self.original_genre_column.iloc[i]
+        dataset = SpotifyRecommenderDataset()
+        original_genre_column = dataset.df['genres']
+        song_count = len(dataset)
+        numerized_genre_column = []
+        for i in tqdm(range(song_count), desc="Numerizing genres"):
+            string_genres = original_genre_column.iloc[i]
             numerized_genres = [self.distinct_genres.index(string_genre) for string_genre in string_genres]
-            self.numerized_genre_column.append(numerized_genres)
+            numerized_genre_column.append(numerized_genres)
+
+        return numerized_genre_column
 
     def _create_probability_distributions(self):
+        numerized_genre_column = self._create_numerized_genres_column()
+        genre_count = len(self.distinct_genres)
         probability_distributions = []
-        for i in range(self.genre_count):
-            probability_distribution = torch.zeros(self.genre_count)
-            ocurrences_of_genre = [genre_list for genre_list in self.numerized_genre_column if i in genre_list]
+        for i in tqdm(range(genre_count), desc="Creating probability distributions"):
+            probability_distribution = torch.zeros(genre_count)
+            ocurrences_of_genre = [genre_list for genre_list in numerized_genre_column if i in genre_list]
             ocurrences_of_genre = list(chain.from_iterable(ocurrences_of_genre))
             for occurence in ocurrences_of_genre:
                 if occurence != i:
                     probability_distribution[occurence] += 1
+            probability_distributions.append(probability_distribution)
+        probability_distributions = torch.stack(probability_distributions)
+        probability_distributions = probability_distributions / torch.sum(probability_distributions,
+                                                                                    dim=1, keepdim=True)
+        return probability_distributions
+
+    def __getitem__(self, genre: str):
+            idx = self.distinct_genres.index(genre)
+            return self.probability_distributions[idx]
 
 
 def main():
     genre_embeddings_dataset = GenreEmbeddingsDataset()
+    sample_distribution = genre_embeddings_dataset['adventista'].numpy()
+    idx = int(np.nonzero(sample_distribution)[0])
+    print(idx)
+    print(genre_embeddings_dataset.distinct_genres[idx])
+
 
 
 if __name__ == "__main__":
