@@ -31,7 +31,7 @@ if trainModel:
     model = Autoencoder()
     model = train_autoencoder(model, train_dataloader, verbose=args.verbose, num_epochs=args.num_epochs)
     with torch.no_grad():
-        print("Evaluation loss:", test(dataset.model_input_tensor))
+        print("Evaluation loss:", test(model, dataset.model_input_tensor))
         encodings = model.encode(dataset.model_input_tensor)
     dataset.add_encoding_tensor(encodings)
     torch.save(model, model_store_path)
