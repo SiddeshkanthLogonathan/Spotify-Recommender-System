@@ -24,12 +24,19 @@ class SpotifyRecommenderDataset(Dataset):
     genre_word2vec_path = os.path.join(dir_for_storing, 'genre_word2vec.pkl')
     artist_word2vec_path = os.path.join(dir_for_storing, 'artist_word2vec.pkl')
 
+    encodings_tensor_path = os.path.join(dir_for_storing, 'encodings_tensor.pt')
+
     def __init__(self):
         if os.path.exists(self.dir_for_storing):
             self.df = pd.read_pickle(self.df_path)
             self.genre_word2vec = Word2Vec.load(self.genre_word2vec_path)
             self.artist_word2vec = Word2Vec.load(self.artist_word2vec_path)
             self.model_input_tensor = torch.load(self.model_input_tensor_path)
+            try:
+                print("Initializing with encodings tensor")
+                self.encodings_tensor = torch.load(self.encodings_tensor_path)
+            except FileNotFoundError:
+                print("Encodings tensor not found. Initializing without it.")
         else:
             self.df = pd.read_csv(self.raw_data_path)
             self._convert_string_column_to_list_type(self.df, 'artists')
@@ -88,13 +95,11 @@ class SpotifyRecommenderDataset(Dataset):
 
         return result
 
-    def add_encoding_columns(self, encodings: Union[torch.tensor, np.array]):
-        self.df['encoding_x'] = encodings[:, 0]
-        self.df['encoding_y'] = encodings[:, 1]
-        self.df['encoding_z'] = encodings[:, 2]
-        self.df.to_pickle(self.df_path)
+    def add_encoding_tensor(self, encodings: torch.tensor):
+        self.encodings_tensor = encodings
+        torch.save(encodings, self.encodings_tensor_path)
 
-    def _join_genres_column_into_main_df(self) -> pd.Series:
+    def _join_genres_column_into_main_df(self):
         """All unique genres of a song. The genres of a song are the genres of all artists of the song."""
 
         df_w_genres = pd.read_csv(self.raw_data_w_genres_path)

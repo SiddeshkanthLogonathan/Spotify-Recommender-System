@@ -6,15 +6,14 @@ import os
 import shutil
 
 mandatory_keys = [
-    "name", "accousticness", "danceability", 
-    "duration_ms", "energy", "instrumentalness", "key", 
-    "liveness", "loudness", "mode", "popularity", 
+    "name", "accousticness", "danceability",
+    "duration_ms", "energy", "instrumentalness", "key",
+    "liveness", "loudness", "mode", "popularity",
     "speechiness", "tempo", "artist", "genres", "year"]
 
 model_store_path = "data/spotify_recommender_dataset/model.pth"
 
 def add_song_to_csv(song, data_path='data/data.csv', data_w_genres_path='data/data_w_genres.csv'):
-    
     with open(data_path, "a") as file:
         file.write(
             song["accousticness"] + "," +
@@ -22,8 +21,8 @@ def add_song_to_csv(song, data_path='data/data.csv', data_w_genres_path='data/da
             song["danceability"] + "," +
             song["duration_ms"] + "," +
             song["energy"] + "," +
-            "0," + #explicit field irrelevant
-            "0 ," + #id field irrelevant
+            "0," +  # explicit field irrelevant
+            "0 ," +  # id field irrelevant
             song["instrumentalness"] + "," +
             song["key"] + "," +
             song["liveness"] + "," +
@@ -31,12 +30,12 @@ def add_song_to_csv(song, data_path='data/data.csv', data_w_genres_path='data/da
             song["mode"] + "," +
             song["name"] + "," +
             song["popularity"] + "," +
-            "0," + # release date irrelevant
+            "0," +  # release date irrelevant
             song["speechiness"] + "," +
             song["tempo"] + "," +
-            "0," +# valence field irrelevant
+            "0," +  # valence field irrelevant
             song["year"] + "\n"
-            )
+        )
 
     with open(data_w_genres_path, "a") as file:
         file.write(
@@ -50,13 +49,13 @@ def add_song_to_csv(song, data_path='data/data.csv', data_w_genres_path='data/da
             song["loudness"] + "," +
             song["speechiness"] + "," +
             song["tempo"] + "," +
-            "0," +# valence field irrelevant
+            "0," +  # valence field irrelevant
             song["popularity"] + "," +
             song["key"] + "," +
             song["mode"] + "," +
-            "0," + #count field irrelevant
+            "0," +  # count field irrelevant
             song["genres"] + "\n"
-            )
+        )
 
 
 def add_song_encoding(song, model=None):
@@ -83,13 +82,14 @@ def add_new_song(song, model=None):
     add_song_encoding(song, model)
     print("song successfully added!")
 
+
 def main():
     try:
         song = json.load(sys.stdin)
     except:
         print("no valid json input provided!")
         sys.exit(1)
-    
+
     corrupted = False
     for key in mandatory_keys:
         if not key in song:
@@ -101,6 +101,7 @@ def main():
         raise ValueError("Some song entries were not present!")
     else:
         add_new_song(song)
+
 
 if __name__ == "__main__":
     main()
