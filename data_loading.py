@@ -90,7 +90,8 @@ class SpotifyRecommenderDataset(Dataset):
 
         genre_embedding_column, artist_embedding_column = self._embedding_columns()
 
-        result = torch.cat([normed_numeric_tensor, genre_embedding_column, artist_embedding_column], dim=1)
+        result = torch.cat([normed_numeric_tensor, normed_numeric_tensor, normed_numeric_tensor, genre_embedding_column,
+                            artist_embedding_column], dim=1)
         self.output_size = result.shape[1]
 
         return result

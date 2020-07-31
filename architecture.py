@@ -19,27 +19,15 @@ class Autoencoder(nn.Module):
 
     def buildArchitecture(self):
         self.encode = nn.Sequential(
-            nn.Linear(44, 30),
+            nn.Linear(72, 40),
             nn.Tanh(),
-            nn.Linear(30, 20),
-            nn.Tanh(),
-            nn.Linear(20, 10),
-            nn.Tanh(),
-            nn.Linear(10, 6),
-            nn.Tanh(),
-            nn.Linear(6, 3),
+            nn.Linear(40, 25)
         )
         self.decode = nn.Sequential(
             nn.Tanh(),
-            nn.Linear(3, 6),
+            nn.Linear(25, 40),
             nn.Tanh(),
-            nn.Linear(6, 10),
-            nn.Tanh(),
-            nn.Linear(10, 20),
-            nn.Tanh(),
-            nn.Linear(20, 30),
-            nn.Tanh(),
-            nn.Linear(30, 44)
+            nn.Linear(40, 72)
         )
 
     def forward(self, batch: torch.tensor):

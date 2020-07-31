@@ -3,10 +3,9 @@ import torch.nn as nn
 from architecture import Autoencoder
 from data_loading import SpotifyRecommenderDataset
 
-def test(model: Autoencoder) -> int:
+def test(model: Autoencoder, input_tensor: torch.tensor) -> int:
     model.eval()
-    dataset = SpotifyRecommenderDataset()
     criterion = nn.MSELoss()
     with torch.no_grad():
-        outputs = model(dataset.model_input_tensor)
-        return criterion(outputs, dataset.model_input_tensor)
+        outputs = model(input_tensor)
+        return criterion(outputs, input_tensor)
