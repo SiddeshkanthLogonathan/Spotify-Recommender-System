@@ -26,6 +26,9 @@ class SpotifyRecommenderDataset(Dataset):
 
     encodings_tensor_path = os.path.join(dir_for_storing, 'encodings_tensor.pt')
 
+    ARTIST_EMBEDDING_DIM = 20
+    GENRE_EMBEDDING_DIM = 30
+
     def __init__(self):
         if os.path.exists(self.dir_for_storing):
             self.df = pd.read_pickle(self.df_path)
@@ -57,7 +60,7 @@ class SpotifyRecommenderDataset(Dataset):
         max_length_of_genres_lists = max(len(genres) for genres in genre_corpus)
         max_length_of_artists_lists = max(len(artists) for artists in artist_corpus)
 
-        genre_word2vec = Word2Vec(genre_corpus, size=10, min_count=1, window=max_length_of_genres_lists + 1)
+        genre_word2vec = Word2Vec(genre_corpus, size=30, min_count=1, window=max_length_of_genres_lists + 1)
         artist_word2vec = Word2Vec(artist_corpus, size=20, min_count=1, window=max_length_of_artists_lists + 1)
 
         return genre_word2vec, artist_word2vec
