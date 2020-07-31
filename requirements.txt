@@ -5,4 +5,5 @@ numpy
 plotly
 pandas
 gensim
-shutil
+pytest-shutil
+sklearn

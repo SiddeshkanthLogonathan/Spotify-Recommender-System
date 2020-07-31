@@ -12,7 +12,6 @@ import dash_table
 import pandas as pd
 import torch
 import numpy as np
-# import datetime
 from visualization import KNN
 from data_loading import SpotifyRecommenderDataset
 
@@ -108,7 +107,6 @@ class WebApp:
             )
         ])
         @self.app.callback(
-            # [Output(component_id='output_container', component_property='children'),
             [Output(component_id='3d_scatter_plot', component_property='figure'),
             Output(component_id='recommendations_table', component_property='data')],
             [Input(component_id='songs_table', component_property='selected_rows'),
