@@ -96,6 +96,7 @@ class WebApp:
                          for column_name in self.dataset_df.loc[:, ['name', 'artists', 'genres', 'popularity']]],
                 data=self.dataset_df.to_dict('records'),
                 filter_action='native',
+                sort_action='native',
                 row_selectable='single',
                 style_table={
                     'height': 400,
