@@ -9,37 +9,98 @@ from tqdm import tqdm
 from statistics import mean
 from collections import namedtuple
 import numpy as np
+from gensim.models import Word2Vec
+import pickle
 
 
 class SpotifyRecommenderDataset(Dataset):
-    NUMERIC_COLUMNS = ["acousticness", "danceability", "duration_ms", "energy", "instrumentalness", "key",
-                       "liveness", "loudness", "mode", "popularity", "speechiness", "tempo", "valence", 'year']
-    DISTINCT_ARTISTS_COUNT = 27621
-    DISTINCT_GENRES_COUNT = 2664
-    NUMERIC_FIELDS_COUNT = 14
 
+    def __new__(cls):
+
+        raw_data_path = 'data/data.csv'
+        data_w_genres_path = 'data/data_w_genres.csv'
+        pickle_path = 'data/spotify_recommender_dataset.pkl'
+
+        if os.path.exists(pickle_path):
+            with open(pickle_path, 'rb') as file:
+                instance = pickle.load(pickle_path)
+        else:
+            instance = super(SpotifyRecommenderDataset, cls).__new__(cls)
+
+            instance.pickle_path = pickle_path
+            instance.data_w_genres_path = data_w_genres_path
+            instance.raw_data_path = raw_data_path
+
+            instance.df = pd.read_csv(raw_data_path)
+            instance._convert_string_column_to_list_type(instance.df, 'artists')
+            instance._join_genres_column_into_main_df()
+            instance.df.to_pickle(pickle_path)
+            instance.model_input_tensor = instance._create_model_input_tensor()
+
+            pickle.dump(instance, open(pickle_path, 'wb'))
+
+        return instance
+    """
     def __init__(self, data_path='data/data.csv', data_w_genres_path='data/data_w_genres.csv',
                  data_by_genres_path='data/data_by_genres.csv', pickle_path='data/dataset.pkl'):
-        """Because the dataset is stored once it is created, only the first initialization takes long."""
 
-        # self.df_by_genres = pd.read_csv(data_by_genres_path)
-        # self._convert_string_column_to_list_type(self.df_w_genres, 'genres')
         self.pickle_path = pickle_path
+        self.data_w_genres_path = data_w_genres_path
 
         if os.path.exists(pickle_path):
             self.df = pd.read_pickle(pickle_path)
+            self.model_input_tensor = self._create_model_input_tensor()
         else:
             self.df = pd.read_csv(data_path)
-            self.df_w_genres = pd.read_csv(data_w_genres_path)
             self._convert_string_column_to_list_type(self.df, 'artists')
-            self._convert_string_column_to_list_type(self.df_w_genres, 'genres')
-            self.df['genres'] = self._genres_column()
-            # self._convert_string_column_to_list_type(self.df, 'genres')
-            # self._numerize_genres_and_artists_columns()
-            # self._normalize_numeric_columns()
+            self._join_genres_column_into_main_df()
             self.df.to_pickle(pickle_path)
+            self.model_input_tensor = self._create_model_input_tensor()
+    """
 
-        self.numeric_fields_tensor = self._create_numeric_fields_tensor()
+    def _word2vec_objects(self):
+        genre_corpus = self.df['genres'].tolist()
+        artist_corpus = self.df['artists'].tolist()
+
+        max_length_of_genres_lists = max(len(genres) for genres in genre_corpus)
+        max_length_of_artists_lists = max(len(artists) for artists in artist_corpus)
+
+        genre_word2vec = Word2Vec(genre_corpus, size=5, min_count=1, window=max_length_of_genres_lists+1)
+        artist_word2vec = Word2Vec(artist_corpus, size=5, min_count=1, window=max_length_of_artists_lists+1)
+
+        return genre_word2vec, artist_word2vec
+
+    def _embedding_columns(self):
+        genre_word2vec, artist_word2vec = self._word2vec_objects()
+
+        artist_embedding_column = []
+        for artist_list in self.df['artists']:
+            artists_embeddings = artist_word2vec.wv[artist_list]
+            mean_embedding = artists_embeddings.mean(axis=0)
+            artist_embedding_column.append(mean_embedding)
+        artist_embedding_column = np.stack(artist_embedding_column)
+
+        genre_embedding_column = []
+        for genre_list in self.df['genres']:
+            genre_embeddings = genre_word2vec.wv[genre_list]
+            mean_embedding = genre_embeddings.mean(axis=0)
+            genre_embedding_column.append(mean_embedding)
+        genre_embedding_column = np.stack(genre_embedding_column)
+
+        return torch.tensor(genre_embedding_column), torch.tensor(artist_embedding_column)
+
+    def _create_model_input_tensor(self):
+        numeric_columns = ["acousticness", "danceability", "duration_ms", "energy", "instrumentalness", "key",
+                           "liveness", "loudness", "mode", "popularity", "speechiness", "tempo", "valence", 'year']
+
+        numeric_df = self.df[numeric_columns]
+        numeric_tensor = torch.tensor(numeric_df.values).float()
+        normed_numeric_tensor = \
+            (numeric_tensor - torch.mean(numeric_tensor, 0, keepdim=True)) / torch.std(numeric_tensor, 0, keepdim=True)
+
+        genre_embedding_column, artist_embedding_column = self._embedding_columns()
+
+        return torch.cat([normed_numeric_tensor, genre_embedding_column, artist_embedding_column], dim=1)
 
     def add_encoding_columns(self, encodings: Union[torch.tensor, np.array]):
         self.df['encoding_x'] = encodings[:, 0]
@@ -47,160 +108,35 @@ class SpotifyRecommenderDataset(Dataset):
         self.df['encoding_z'] = encodings[:, 2]
         self.df.to_pickle(self.pickle_path)
 
-    def _genres_column(self) -> pd.Series:
+    def _join_genres_column_into_main_df(self) -> pd.Series:
         """All unique genres of a song. The genres of a song are the genres of all artists of the song."""
 
+        df_w_genres = pd.read_csv(self.data_w_genres_path)
+        self._convert_string_column_to_list_type(df_w_genres, 'genres')
         genres_column = []
+        none_genre = -1
 
-        for i in tqdm(range(len(self.df.index)), desc="Collecting genres"):
+        for i in tqdm(range(len(self.df.index)), desc="Joining genres into main dataframe"):
             artists_of_song = self.df.loc[i, 'artists']
-            bool_index = self.df_w_genres['artists'].isin(artists_of_song)
-            genres_of_song = self.df_w_genres.loc[bool_index, 'genres']
+            bool_index = df_w_genres['artists'].isin(artists_of_song)
+            genres_of_song = df_w_genres.loc[bool_index, 'genres']
             genres_of_song = list(set(chain.from_iterable(genres_of_song)))
+
+            if not genres_of_song:
+                genres_of_song = [str(none_genre)]
+                none_genre -= 1
+
             genres_column.append(genres_of_song)
 
-        return pd.Series(genres_column)
-
-    def _numerize_genres_and_artists_columns(self):
-        distinct_genres = list(self.df_by_genres['genres'])
-        genre_for_songs_without_genres = len(distinct_genres)
-        numerized_genres_column = []
-
-        for i in tqdm(range(len(self.df.index)), desc="Numerizing genres"):
-            genres = self.df.loc[i, 'genres']
-            if genres:
-                numerized_genres = [distinct_genres.index(genre) for genre in genres]
-            else:
-                numerized_genres = [genre_for_songs_without_genres]
-                genre_for_songs_without_genres += 1
-
-            numerized_genres_column.append(numerized_genres)
-
-        self.df['genres'] = numerized_genres_column
-
-        distinct_artists = list(self.df_w_genres['artists'])
-        artist_index_for_songs_without_artist = len(distinct_artists)
-        numerized_artists_column = []
-        for i in tqdm(range(len(self.df.index)), desc="Numerizing artists"):
-            artists = self.df.loc[i, 'artists']
-            numerized_artists = [distinct_artists.index(artist) for artist in artists if artist in distinct_artists]
-
-            if not numerized_artists:
-                numerized_artists = [artist_index_for_songs_without_artist]
-                artist_index_for_songs_without_artist += 1
-
-            numerized_artists_column.append(numerized_artists)
-
-        self.df['artists'] = numerized_artists_column
+        self.df['genres'] = genres_column
 
     def _convert_string_column_to_list_type(self, dataframe: pd.DataFrame, column: str):
         string_column = dataframe[column]
         list_column = [literal_eval(string_element) for string_element in string_column]
         dataframe[column] = list_column
 
-    def _drop_unnecessary_columns(self):
-        self.df.drop(self.COLUMNS_TO_DROP, axis=1, inplace=True)
-
-    def _normalize_numeric_columns(self):
-        for col in self.NUMERIC_COLUMNS:
-            mean = self.df[col].mean()
-            stddev = self.df[col].std()
-            self.df[col] = (self.df[col] - mean) / stddev * 100
-
-    def _create_numeric_fields_tensor(self):
-        df = self.df[self.NUMERIC_COLUMNS]
-        tensor = torch.tensor(df.values).float()
-        normed = (tensor - torch.mean(tensor, 0, keepdim=True)) / torch.std(tensor, 0, keepdim=True)
-
-        return normed
-
     def __len__(self):
-        return len(self.df.index)
+        return len(self.model_input_tensor)
 
-    # ReturnType = Tuple[Tuple[List, torch.tensor, List], torch.tensor]
-    ReturnType = namedtuple('ReturnType', ['artists', 'numeric_fields', 'genres', 'training_label'])
-
-    def __getitem__(self, idx: Union[int, slice, list]) -> ReturnType:
-        numeric_fields_tensor = self.numeric_fields_tensor[idx]
-
-        # artists = list(self.df.loc[idx, 'artists'])
-        # genres = list(self.df.loc[idx, 'genres'])
-
-        # mean_normalized_artist = self._normalize_artist_index(mean(artists))
-        # mean_normalized_genre = self._normalize_genre_index(mean(genres))
-
-        # mean_normalized_artist_tensor = torch.tensor([mean_normalized_artist])
-        # mean_normalized_genre_tensor = torch.tensor([mean_normalized_genre])
-
-        # training_label_tensor = torch.cat(
-        #     [mean_normalized_artist_tensor, numeric_fields_tensor, mean_normalized_genre_tensor]
-        # )
-
-        # return self.ReturnType(artists=artists, numeric_fields=numeric_fields_tensor, genres=genres,
-        #                        training_label=training_label_tensor)
-
-        return self.ReturnType(artists=None, numeric_fields=None, genres=None, training_label=numeric_fields_tensor)
-
-
-def SpotifyRecommenderDataLoader(*args, **kwargs):
-    def custom_collate_fn(batch: List[SpotifyRecommenderDataset.ReturnType]) -> SpotifyRecommenderDataset.ReturnType:
-        # all_artists = [sample.artists for sample in batch]
-        # all_numeric_fields = torch.stack([sample.numeric_fields for sample in batch])
-        # all_genres = [sample.genres for sample in batch]
-        all_training_labels = torch.stack([sample.training_label for sample in batch])
-
-        # return SpotifyRecommenderDataset.ReturnType(artists=all_artists, numeric_fields=all_numeric_fields,
-        #                                             genres=all_genres, training_label=all_training_labels)
-        return SpotifyRecommenderDataset.ReturnType(artists=None, numeric_fields=None,
-                                                    genres=None, training_label=all_training_labels)
-
-    return torch.utils.data.DataLoader(*args, **kwargs, collate_fn=custom_collate_fn)
-
-
-class GenreOccurenceDataset:
-    tensor_path = "data/genres_occurence_distributions.pt"
-    def __init__(self):
-        self.distinct_genres = list(pd.read_csv('data/data_by_genres.csv')['genres'])
-        if os.path.exists(self.tensor_path):
-            self.probability_distributions = torch.load(self.tensor_path)
-        else:
-            self.probability_distributions = self._create_probability_distributions()
-            torch.save(self.probability_distributions, self.tensor_path)
-
-    def _create_numerized_genres_column(self):
-        dataset = SpotifyRecommenderDataset()
-        original_genre_column = dataset.df['genres']
-        song_count = len(dataset)
-        numerized_genre_column = []
-        for i in tqdm(range(song_count), desc="Numerizing genres"):
-            string_genres = original_genre_column.iloc[i]
-            numerized_genres = [self.distinct_genres.index(string_genre) for string_genre in string_genres]
-            numerized_genre_column.append(numerized_genres)
-
-        return numerized_genre_column
-
-    def _create_probability_distributions(self):
-        numerized_genre_column = self._create_numerized_genres_column()
-        genre_count = len(self.distinct_genres)
-        probability_distributions = []
-        for i in tqdm(range(genre_count), desc="Creating probability distributions"):
-            probability_distribution = torch.zeros(genre_count)
-            ocurrences_of_genre = [genre_list for genre_list in numerized_genre_column if i in genre_list]
-            ocurrences_of_genre = list(chain.from_iterable(ocurrences_of_genre))
-            for occurence in ocurrences_of_genre:
-                if occurence != i:
-                    probability_distribution[occurence] += 1
-            probability_distributions.append(probability_distribution)
-        probability_distributions = torch.stack(probability_distributions)
-        probability_distributions = probability_distributions / torch.sum(probability_distributions,
-                                                                                    dim=1, keepdim=True)
-        return probability_distributions
-
-    def __len__(self):
-        return len(self.distinct_genres)
-
-    def __getitem__(self, idx: Union[int, str]):
-        if isinstance(idx, str):
-            idx = self.distinct_genres.index(idx)
-
-        return (idx, self.probability_distributions[idx])
+    def __getitem__(self, idx: Union[int, slice, list]):
+        return self.model_input_tensor[idx]

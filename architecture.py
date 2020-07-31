@@ -5,7 +5,8 @@ import numpy as np
 import time
 from itertools import chain
 from typing import List
-from data_loading import SpotifyRecommenderDataset, SpotifyRecommenderDataLoader
+from data_loading import SpotifyRecommenderDataset
+from gensim.models import Word2Vec
 
 
 def init_weights(layer):
@@ -95,3 +96,6 @@ class GenreEmbedder(nn.Module):
         result = self.fully_connected(embeddings)
         a = 10
         return result
+
+
+
