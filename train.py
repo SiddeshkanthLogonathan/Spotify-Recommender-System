@@ -1,7 +1,5 @@
-from data_loading import SpotifyRecommenderDataset
 from architecture import Autoencoder
 import torch
-
 
 
 def train_autoencoder(model: Autoencoder, dataloader, verbose=True, num_epochs=10):

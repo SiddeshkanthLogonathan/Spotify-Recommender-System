@@ -1,8 +1,4 @@
-import pandas as pd
 import plotly.express as px  # (version 4.7.0)
-import plotly.graph_objects as go
-
-from data_loading import SpotifyRecommenderDataset
 import visualization
 import dash  # (version 1.12.0) pip install dash
 import dash_core_components as dcc
@@ -10,10 +6,8 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 import dash_table
 import pandas as pd
-import torch
-import numpy as np
-from visualization import KNN
 from data_loading import SpotifyRecommenderDataset
+
 
 class WebApp:
     external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -106,6 +100,7 @@ class WebApp:
                 }
             )
         ])
+
         @self.app.callback(
             [Output(component_id='3d_scatter_plot', component_property='figure'),
             Output(component_id='recommendations_table', component_property='data')],

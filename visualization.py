@@ -1,11 +1,5 @@
-import random
-import plotly.graph_objects as go
-import plotly.express as px
-import pandas as pd
 import numpy as np
-import torch
 from sklearn.decomposition import PCA
-from data_loading import SpotifyRecommenderDataset
 
 
 class KNN:
@@ -50,7 +44,6 @@ class KNN:
         knn_points_low_dim = dim_reduced_points[1:]
 
         return chosen_point_low_dim, knn_points_low_dim
-
 
     def _compute_k_nearest_neighbours(self, index_of_chosen_point, k):
         chosen_point = self.points[index_of_chosen_point]

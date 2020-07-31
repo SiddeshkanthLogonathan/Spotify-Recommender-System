@@ -1,9 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
-import time
-from data_loading import SpotifyRecommenderDataset
 
 
 def init_weights(layer):
@@ -11,13 +7,14 @@ def init_weights(layer):
         torch.nn.init.xavier_normal_(layer.weight)
         layer.bias.data.fill_(0.01)
 
+
 class Autoencoder(nn.Module):
     def __init__(self):
         super(Autoencoder, self).__init__()
-        self.buildArchitecture()
+        self.build_architecture()
         self.apply(init_weights)
 
-    def buildArchitecture(self):
+    def build_architecture(self):
         self.encode = nn.Sequential(
             nn.Linear(92, 70),
             nn.Tanh(),

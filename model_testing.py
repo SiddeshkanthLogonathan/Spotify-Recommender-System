@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from architecture import Autoencoder
-from data_loading import SpotifyRecommenderDataset
+
 
 def test(model: Autoencoder, input_tensor: torch.tensor) -> int:
     model.eval()

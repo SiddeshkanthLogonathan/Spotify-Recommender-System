@@ -2,15 +2,12 @@ import pandas as pd
 import torch
 import os
 from torch.utils.data import Dataset
-from typing import Tuple, Union, List
+from typing import Union
 from ast import literal_eval
 from itertools import chain
 from tqdm import tqdm
-from statistics import mean
-from collections import namedtuple
 import numpy as np
 from gensim.models import Word2Vec
-import pickle
 
 
 class SpotifyRecommenderDataset(Dataset):
