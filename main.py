@@ -23,13 +23,12 @@ parser.add_argument("-n", "--num-epochs", help="the number of epochs you want th
     train. Only useful with -t option.", type=int, default=10)
 args = parser.parse_args()
 
-
-trainModel = args.train
-if not os.path.exists(model_store_path):
-    trainModel = True
-
 if args.clean and os.path.exists(dataframe_store_path):
     shutil.rmtree(dataframe_store_path)
+
+trainModel = args.train
+if not os.path.exists(model_store_path) or not os.path.exists(dataframe_store_path):
+    trainModel = True
 
 dataset = SpotifyRecommenderDataset()
 if trainModel:
