@@ -8,23 +8,30 @@ import torch
 import argparse
 import os
 import argparse
+import shutil
 from model_testing import test
 
 model_store_path = "./data/spotify_recommender_dataset/model.pth"
+dataframe_store_path = "data/spotify_recommender_dataset"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--train", help="force retraining of the model", action="store_true")
 parser.add_argument("-v", "--verbose", help="verbose mode", action="store_true")
+parser.add_argument("-c", "--clean", help="clean all cached dataframe files in \
+    data/spotify_recommender_dataset/ and produce new ones (might take some time)", action="store_true")
 parser.add_argument("-n", "--num-epochs", help="the number of epochs you want the model to \
     train. Only useful with -t option.", type=int, default=10)
 args = parser.parse_args()
 
-dataset = SpotifyRecommenderDataset()
 
 trainModel = args.train
 if not os.path.exists(model_store_path):
     trainModel = True
 
+if args.clean and os.path.exists(dataframe_store_path):
+    shutil.rmtree(dataframe_store_path)
+
+dataset = SpotifyRecommenderDataset()
 if trainModel:
     print("starting to train model...")
     train_dataloader = torch.utils.data.DataLoader(dataset, batch_size=256, shuffle=True)

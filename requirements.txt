@@ -5,3 +5,4 @@ numpy
 plotly
 pandas
 gensim
+shutil
