@@ -1,18 +1,19 @@
-from data_loading import SpotifyRecommenderDataset, SpotifyRecommenderDataLoader
+from data_loading import SpotifyRecommenderDataset
 from architecture import Autoencoder
 import torch
 
-default_num_epochs = 10
-default_criterion = torch.nn.MSELoss()
-default_learning_rate = 0.01
-#default_decay_rate = 0.9
 
-def train(model: Autoencoder, dataloader: torch.utils.data.DataLoader, num_epochs=default_num_epochs,
-          criterion=default_criterion, verbose=True):
+
+def train_autoencoder(model: Autoencoder, dataloader, verbose=True):
+    num_epochs = 10
+    criterion = torch.nn.MSELoss()
+    learning_rate = 0.01
+    # default_decay_rate = 0.9
 
     #optimizer = torch.optim.Adam(params=model.parameters(), lr=0.01, betas=(0.9, 0.999), eps=1e-08, weight_decay=0,
     #                 amsgrad=False)
-    optimizer = torch.optim.Adam(params=model.parameters(), lr=0.01)
+
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=learning_rate)
 
     #scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=default_decay_rate)
 
@@ -20,9 +21,10 @@ def train(model: Autoencoder, dataloader: torch.utils.data.DataLoader, num_epoch
         epoch_loss = 0.0
 
         for batch in dataloader:
+            labels = batch
             optimizer.zero_grad()
             outputs = model(batch)
-            loss = criterion(outputs, batch.training_label)
+            loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
