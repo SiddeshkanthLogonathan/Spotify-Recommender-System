@@ -9,15 +9,15 @@ mandatory_keys = [
     "name", "accousticness", "danceability",
     "duration_ms", "energy", "instrumentalness", "key",
     "liveness", "loudness", "mode", "popularity",
-    "speechiness", "tempo", "artist", "genres", "year", "valence"]
+    "speechiness", "tempo", "artists", "genres", "year", "valence"]
 
-model_store_path = "data/spotify_recommender_dataset/model.pth"
+model_store_path = "./model.pth"
 
 def add_song_to_csv(song, data_path='data/data.csv', data_w_genres_path='data/data_w_genres.csv'):
     with open(data_path, "a") as file:
         file.write(
             song["accousticness"] + "," +
-            song["artist"] + "," +
+            "\""+ str(song["artists"]) + "\"," +
             song["danceability"] + "," +
             song["duration_ms"] + "," +
             song["energy"] + "," +
@@ -38,24 +38,25 @@ def add_song_to_csv(song, data_path='data/data.csv', data_w_genres_path='data/da
         )
 
     with open(data_w_genres_path, "a") as file:
-        file.write(
-            song["artist"][1:-1] + "," +
-            song["accousticness"] + "," +
-            song["danceability"] + "," +
-            song["duration_ms"] + "," +
-            song["energy"] + "," +
-            song["instrumentalness"] + "," +
-            song["liveness"] + "," +
-            song["loudness"] + "," +
-            song["speechiness"] + "," +
-            song["tempo"] + "," +
-            song["valence"] + ", " +
-            song["popularity"] + "," +
-            song["key"] + "," +
-            song["mode"] + "," +
-            "0," +  # count field irrelevant
-            song["genres"] + "\n"
-        )
+        for artist in song["artists"]:
+            file.write(
+                artist + "," +
+                song["accousticness"] + "," +
+                song["danceability"] + "," +
+                song["duration_ms"] + "," +
+                song["energy"] + "," +
+                song["instrumentalness"] + "," +
+                song["liveness"] + "," +
+                song["loudness"] + "," +
+                song["speechiness"] + "," +
+                song["tempo"] + "," +
+                song["valence"] + ", " +
+                song["popularity"] + "," +
+                song["key"] + "," +
+                song["mode"] + "," +
+                "0," +  # count field irrelevant
+                str(song["genres"]) + "\n"
+            )
 
 
 def add_song_encoding(song, model=None):
@@ -77,7 +78,7 @@ def add_song_encoding(song, model=None):
     torch.save(model, model_store_path)
 
 def add_new_song(song, model=None):
-    print("adding new song art ", song["artist"], " type is: ", type(song["artist"]))
+    print("adding new song art ", song["artists"], " type is: ", type(song["artists"]))
 
     print("adding new song!")
     add_song_to_csv(song)
@@ -97,8 +98,8 @@ def main():
         if not key in song:
             print("ERROR: key ", key, " not present in song definition!")
             corrupted = True
-        else:
-            song[key] = str(song[key])
+        elif not type(song[key]) is list:
+                song[key] = str(song[key])
     if corrupted:
         raise ValueError("Some song entries were not present!")
     else:

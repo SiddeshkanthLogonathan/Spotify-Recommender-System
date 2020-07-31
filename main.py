@@ -11,7 +11,7 @@ import argparse
 import shutil
 from model_testing import test
 
-model_store_path = "./data/spotify_recommender_dataset/model.pth"
+model_store_path = "./model.pth"
 dataframe_store_path = "data/spotify_recommender_dataset"
 
 parser = argparse.ArgumentParser()
