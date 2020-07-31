@@ -131,7 +131,7 @@ class WebApp:
             fig.update_layout(showlegend=False, title=song_name,
                               font=dict(
                                     family="Courier New, monospace",
-                                    size=18
+                                    size=14
                                 )
                               )
 
