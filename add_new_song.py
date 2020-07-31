@@ -13,7 +13,6 @@ mandatory_keys = [
 
 model_store_path = "data/spotify_recommender_dataset/model.pth"
 
-
 def add_song_to_csv(song, data_path='data/data.csv', data_w_genres_path='data/data_w_genres.csv'):
     with open(data_path, "a") as file:
         file.write(
@@ -76,7 +75,6 @@ def add_song_encoding(song, model=None):
         encodings = model.encode(dataset.model_input_tensor)
     dataset.add_encoding_columns(encodings)
     torch.save(model, model_store_path)
-
 
 def add_new_song(song, model=None):
     print("adding new song!")
