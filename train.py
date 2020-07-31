@@ -4,8 +4,7 @@ import torch
 
 
 
-def train_autoencoder(model: Autoencoder, dataloader, verbose=True):
-    num_epochs = 10
+def train_autoencoder(model: Autoencoder, dataloader, verbose=True, num_epochs=10):
     criterion = torch.nn.MSELoss()
     learning_rate = 0.01
     # default_decay_rate = 0.9
