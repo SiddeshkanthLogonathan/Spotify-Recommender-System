@@ -19,8 +19,8 @@ from data_loading import SpotifyRecommenderDataset
 class WebApp:
     external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-    def __init__(self):
-        self.dataset = SpotifyRecommenderDataset()
+    def __init__(self, dataset):
+        self.dataset = dataset
         self.dataset_df = self.dataset.df
 
         #self.dataset_df['duration (minutes)'] = self.dataset_df['duration_ms'] / 60000

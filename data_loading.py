@@ -14,75 +14,58 @@ import pickle
 
 
 class SpotifyRecommenderDataset(Dataset):
+    raw_data_path = 'data/data.csv'
+    raw_data_w_genres_path = 'data/data_w_genres.csv'
 
-    def __new__(cls):
+    dir_for_storing = 'data/spotify_recommender_dataset'
 
-        raw_data_path = 'data/data.csv'
-        data_w_genres_path = 'data/data_w_genres.csv'
-        pickle_path = 'data/spotify_recommender_dataset.pkl'
+    df_path = os.path.join(dir_for_storing, 'df.pkl')
+    model_input_tensor_path = os.path.join(dir_for_storing, 'model_input_tensor.pt')
+    genre_word2vec_path = os.path.join(dir_for_storing, 'genre_word2vec.pkl')
+    artist_word2vec_path = os.path.join(dir_for_storing, 'artist_word2vec.pkl')
 
-        if os.path.exists(pickle_path):
-            with open(pickle_path, 'rb') as file:
-                instance = pickle.load(pickle_path)
+    def __init__(self):
+        if os.path.exists(self.dir_for_storing):
+            self.df = pd.read_pickle(self.df_path)
+            self.genre_word2vec = Word2Vec.load(self.genre_word2vec_path)
+            self.artist_word2vec = Word2Vec.load(self.artist_word2vec_path)
+            self.model_input_tensor = torch.load(self.model_input_tensor_path)
         else:
-            instance = super(SpotifyRecommenderDataset, cls).__new__(cls)
-
-            instance.pickle_path = pickle_path
-            instance.data_w_genres_path = data_w_genres_path
-            instance.raw_data_path = raw_data_path
-
-            instance.df = pd.read_csv(raw_data_path)
-            instance._convert_string_column_to_list_type(instance.df, 'artists')
-            instance._join_genres_column_into_main_df()
-            instance.df.to_pickle(pickle_path)
-            instance.model_input_tensor = instance._create_model_input_tensor()
-
-            pickle.dump(instance, open(pickle_path, 'wb'))
-
-        return instance
-    """
-    def __init__(self, data_path='data/data.csv', data_w_genres_path='data/data_w_genres.csv',
-                 data_by_genres_path='data/data_by_genres.csv', pickle_path='data/dataset.pkl'):
-
-        self.pickle_path = pickle_path
-        self.data_w_genres_path = data_w_genres_path
-
-        if os.path.exists(pickle_path):
-            self.df = pd.read_pickle(pickle_path)
-            self.model_input_tensor = self._create_model_input_tensor()
-        else:
-            self.df = pd.read_csv(data_path)
+            self.df = pd.read_csv(self.raw_data_path)
             self._convert_string_column_to_list_type(self.df, 'artists')
             self._join_genres_column_into_main_df()
-            self.df.to_pickle(pickle_path)
+            self.genre_word2vec, self.artist_word2vec = self._create_word2vec_objects()
             self.model_input_tensor = self._create_model_input_tensor()
-    """
 
-    def _word2vec_objects(self):
+            os.mkdir(self.dir_for_storing)
+            self.df.to_pickle(self.df_path)
+            self.genre_word2vec.save(self.genre_word2vec_path)
+            self.artist_word2vec.save(self.artist_word2vec_path)
+            torch.save(self.model_input_tensor, self.model_input_tensor_path)
+
+    def _create_word2vec_objects(self):
         genre_corpus = self.df['genres'].tolist()
         artist_corpus = self.df['artists'].tolist()
 
         max_length_of_genres_lists = max(len(genres) for genres in genre_corpus)
         max_length_of_artists_lists = max(len(artists) for artists in artist_corpus)
 
-        genre_word2vec = Word2Vec(genre_corpus, size=5, min_count=1, window=max_length_of_genres_lists+1)
-        artist_word2vec = Word2Vec(artist_corpus, size=5, min_count=1, window=max_length_of_artists_lists+1)
+        genre_word2vec = Word2Vec(genre_corpus, size=10, min_count=1, window=max_length_of_genres_lists + 1)
+        artist_word2vec = Word2Vec(artist_corpus, size=20, min_count=1, window=max_length_of_artists_lists + 1)
 
         return genre_word2vec, artist_word2vec
 
     def _embedding_columns(self):
-        genre_word2vec, artist_word2vec = self._word2vec_objects()
-
         artist_embedding_column = []
         for artist_list in self.df['artists']:
-            artists_embeddings = artist_word2vec.wv[artist_list]
+            artists_embeddings = self.artist_word2vec.wv[artist_list]
             mean_embedding = artists_embeddings.mean(axis=0)
             artist_embedding_column.append(mean_embedding)
         artist_embedding_column = np.stack(artist_embedding_column)
 
         genre_embedding_column = []
         for genre_list in self.df['genres']:
-            genre_embeddings = genre_word2vec.wv[genre_list]
+            genre_embeddings = self.genre_word2vec.wv[genre_list]
             mean_embedding = genre_embeddings.mean(axis=0)
             genre_embedding_column.append(mean_embedding)
         genre_embedding_column = np.stack(genre_embedding_column)
@@ -100,18 +83,21 @@ class SpotifyRecommenderDataset(Dataset):
 
         genre_embedding_column, artist_embedding_column = self._embedding_columns()
 
-        return torch.cat([normed_numeric_tensor, genre_embedding_column, artist_embedding_column], dim=1)
+        result = torch.cat([normed_numeric_tensor, genre_embedding_column, artist_embedding_column], dim=1)
+        self.output_size = result.shape[1]
+
+        return result
 
     def add_encoding_columns(self, encodings: Union[torch.tensor, np.array]):
         self.df['encoding_x'] = encodings[:, 0]
         self.df['encoding_y'] = encodings[:, 1]
         self.df['encoding_z'] = encodings[:, 2]
-        self.df.to_pickle(self.pickle_path)
+        self.df.to_pickle(self.df_path)
 
     def _join_genres_column_into_main_df(self) -> pd.Series:
         """All unique genres of a song. The genres of a song are the genres of all artists of the song."""
 
-        df_w_genres = pd.read_csv(self.data_w_genres_path)
+        df_w_genres = pd.read_csv(self.raw_data_w_genres_path)
         self._convert_string_column_to_list_type(df_w_genres, 'genres')
         genres_column = []
         none_genre = -1
