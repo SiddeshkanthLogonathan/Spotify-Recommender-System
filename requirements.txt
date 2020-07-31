@@ -4,3 +4,4 @@ dash
 numpy
 plotly
 pandas
+gensim
