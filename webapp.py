@@ -42,7 +42,7 @@ class WebApp:
                 html.H3("How many recommendations"),
                 dcc.Input(id='value_for_k', value="20"),
                 html.Br()
-            ], style={'display': 'inline-block'}),
+            ], style={'display': 'inline-block', 'margin-bottom': '2em'}),
 
             html.Div([
                 html.Div([
@@ -118,6 +118,7 @@ class WebApp:
             if song_id is None:
                 song_id = [84645]
 
+            song_name = self.dataset_df.loc[song_id[0], 'name']
             song_id = self.dataset_df.loc[song_id[0], 'id']
 
             chosen_song_df, knn_df = self.knn.knn_query(song_id, int(k))
@@ -126,7 +127,12 @@ class WebApp:
             print(song_recommendations_df)
             fig = px.scatter_3d(chosen_song_and_knn_df, x='encoding_x', y='encoding_y', z='encoding_z', hover_name='name',
                                 hover_data=chosen_song_and_knn_df.loc[:, ['artists']], color='type')
-            fig.update_layout(showlegend=False)
+            fig.update_layout(showlegend=False, title=song_name,
+                              font=dict(
+                                    family="Courier New, monospace",
+                                    size=18
+                                )
+                              )
 
             return fig, song_recommendations_df.to_dict('records')
 

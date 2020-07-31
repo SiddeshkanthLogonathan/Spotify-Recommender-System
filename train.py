@@ -31,6 +31,10 @@ def train_autoencoder(model: Autoencoder, dataloader, verbose=True, num_epochs=1
         epoch_loss = epoch_loss / len(dataloader)
         #scheduler.step()
         if verbose:
+<<<<<<< HEAD
             print(f"Loss of epoch {epoch+1}: {epoch_loss}")
+=======
+            print(f"Loss of epoch {epoch + 1}: {epoch_loss}")
+>>>>>>> 5df4152cf3ff0f12f9660812b4d3e430c4106e58
 
     return model
