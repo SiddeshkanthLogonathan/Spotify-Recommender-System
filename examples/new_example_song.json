@@ -13,5 +13,6 @@
     "speechiness": 12,
     "tempo": 180, 
     "artist": ["Frank Walter Steinmeier"], 
-    "genre": ["letztes"]
+    "genres": ["letztes"],
+    "year": 2000
 }
