@@ -9,7 +9,7 @@ mandatory_keys = [
     "name", "accousticness", "danceability",
     "duration_ms", "energy", "instrumentalness", "key",
     "liveness", "loudness", "mode", "popularity",
-    "speechiness", "tempo", "artist", "genres", "year"]
+    "speechiness", "tempo", "artist", "genres", "year", "valence"]
 
 model_store_path = "data/spotify_recommender_dataset/model.pth"
 
@@ -33,13 +33,13 @@ def add_song_to_csv(song, data_path='data/data.csv', data_w_genres_path='data/da
             "0," +  # release date irrelevant
             song["speechiness"] + "," +
             song["tempo"] + "," +
-            "0," +  # valence field irrelevant
+            song["valence"] + "," +
             song["year"] + "\n"
         )
 
     with open(data_w_genres_path, "a") as file:
         file.write(
-            song["artist"] + "," +
+            song["artist"][1:-1] + "," +
             song["accousticness"] + "," +
             song["danceability"] + "," +
             song["duration_ms"] + "," +
@@ -49,7 +49,7 @@ def add_song_to_csv(song, data_path='data/data.csv', data_w_genres_path='data/da
             song["loudness"] + "," +
             song["speechiness"] + "," +
             song["tempo"] + "," +
-            "0," +  # valence field irrelevant
+            song["valence"] + ", " +
             song["popularity"] + "," +
             song["key"] + "," +
             song["mode"] + "," +
@@ -77,6 +77,8 @@ def add_song_encoding(song, model=None):
     torch.save(model, model_store_path)
 
 def add_new_song(song, model=None):
+    print("adding new song art ", song["artist"], " type is: ", type(song["artist"]))
+
     print("adding new song!")
     add_song_to_csv(song)
     add_song_encoding(song, model)
